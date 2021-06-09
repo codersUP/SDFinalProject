@@ -7,9 +7,9 @@ import random
 
 class SubFinger:
     def __init__(self):
-        self.start = 0
-        self.node = 0
-        self.node_succesor = 0
+        self.start = -1
+        self.node = -1
+        self.node_succesor = -1
 
 
 class ChordNode:
@@ -120,46 +120,69 @@ class ChordNode:
 
 
     def join(self):
-        if self.know_ip == self.ip:
-            for i in range(1, self.bits + 1):
-                self.finger[i].node = self.id
-            self.predecesor = self.id
-            return
+        if self.know_ip != self.ip:
+            id = self.askAlive(self.know_ip)
 
-        id = self.askAlive(self.know_ip)
-        if id != -1:
-            self.initFingerTable(id)
-            self.update_others()
+            if id != -1:
+                self.initFingerTable(id)
+                self.update_others()
+                return
 
-        else:
-            print('Im the only node in the network')
+        print('Im the only node in the network')
 
-            for i in range(1, self.bits + 1):
-                self.finger[i].node = self.id
-            self.predecesor = self.id
+        for i in range(1, self.bits + 1):
+            self.finger[i].node = self.id
+            self.finger[i].node_succesor = self.id
+        self.predecesor = self.id
+
+        return
 
 
     def initFingerTable(self, node_id):
         # print('init finger table')
-        self.finger[1].node = self.askFindSuccesor(node_id, self.finger[1].start)
-        self.predecesor = self.askPredecesor(self.getSuccesor())
-        self.askSetPredecesor(self.getSuccesor(), self.id)
+
+        find_succesor_id = self.askFindSuccesor(node_id, self.finger[1].start)
+        if find_succesor_id != -1:
+            self.finger[1].node = find_succesor_id
+        else:
+            raise Exception('ERROR joining')
+
+        ask_predecesor_id = self.askPredecesor(self.getSuccesor())
+        if ask_predecesor_id != -1:
+            self.predecesor = ask_predecesor_id
+        else:
+            raise Exception('ERROR joining')
+
+        ask_setPredecesor_ret = self.askSetPredecesor(self.getSuccesor(), self.id)
+        if ask_setPredecesor_ret == -1:
+            raise Exception('ERROR joining')
 
         for i in range(1, self.bits):
             if self.inRange(self.finger[i + 1].start, self.id, True, self.finger[i].node, False):
                 self.finger[i + 1].node = self.finger[i].node
             else:
-                self.finger[i + 1].node = self.askFindSuccesor(node_id, self.finger[i + 1].start)
+                ask_findSuccesor_id = self.askFindSuccesor(node_id, self.finger[i + 1].start)
+                if ask_findSuccesor_id != -1:
+                    self.finger[i + 1].node = ask_findSuccesor_id
+                else:
+                    raise Exception('ERROR joining')
 
 
     def update_others(self):
         # print('init update_others')
         for i in range(1, self.bits + 1):
-            p = self.findPredecesor((self.id - 2**(i - 1)) % (2**self.bits))
+            find_predecesor_id = self.findPredecesor((self.id - 2**(i - 1)) % (2**self.bits))
+            if find_predecesor_id != -1:
+                p = find_predecesor_id
+            else:
+                raise Exception('ERROR joining')
 
             if p == self.id:
                 continue
-            self.askUpdateFingerTable(p, self.id, i)
+
+            askUpdateFingerTable_id = self.askUpdateFingerTable(p, self.id, i)
+            if askUpdateFingerTable_id == -1:
+                raise Exception('ERROR joining')
 
 
     def updateFingerTable(self, s, i):
@@ -184,7 +207,7 @@ class ChordNode:
             socket.send_string(dictToJson(alive_req_dict))
 
             message = socket.recv()
-            print(message)
+            # print(message)
 
             message_dict = jsonToDict(message)
 
@@ -193,11 +216,10 @@ class ChordNode:
                 return message_dict[macros.id]
 
         except Exception as e:
-            print(e)
+            print(e, f'Error AskAlive to {ip}')
             socket.close()
             return -1
 
-    
     def ansAlive(self, socket, message_dict):
         self.id_ip[message_dict[macros.id]] = message_dict[macros.ip]
         alive_rep_dict = {macros.action: macros.alive_rep, macros.id: self.id, macros.ip: self.ip}
@@ -213,17 +235,27 @@ class ChordNode:
         socket = context.socket(zmq.REQ)
 
         socket.connect(f'tcp://{self.id_ip[node_id]}:5555')
-        ask_succesor_req = {macros.action: macros.ask_succesor_req}
-        # print(ask_succesor_req, node_id)
-        socket.send_string(dictToJson(ask_succesor_req))
 
-        message = socket.recv()
-        # print(message)
+        socket.setsockopt( zmq.LINGER, 0)
+        socket.setsockopt( zmq.RCVTIMEO, macros.TIME_LIMIT )
 
-        message_dict = jsonToDict(message)
-        if isAskSuccesorRep(message_dict):
-            self.id_ip[message_dict[macros.answer]['id']] = message_dict[macros.answer]['ip']
-            return message_dict[macros.answer]['id']
+        try:
+            ask_succesor_req = {macros.action: macros.ask_succesor_req}
+            # print(ask_succesor_req, node_id)
+            socket.send_string(dictToJson(ask_succesor_req))
+
+            message = socket.recv()
+            # print(message)
+
+            message_dict = jsonToDict(message)
+            if isAskSuccesorRep(message_dict):
+                self.id_ip[message_dict[macros.answer]['id']] = message_dict[macros.answer]['ip']
+                return message_dict[macros.answer]['id']
+            
+        except Exception as e:
+            print(e, f'Error askSuccesor to: ID: {node_id}, IP: {self.id_ip[node_id]}')
+            socket.close()
+            return -1
 
     def ansSuccesor(self, socket, id):
         ask_succesor_rep = {macros.action: macros.ask_succesor_rep, macros.answer: {'id': id, 'ip': self.id_ip[id]}}
@@ -236,17 +268,26 @@ class ChordNode:
         socket = context.socket(zmq.REQ)
         socket.connect(f'tcp://{self.id_ip[node_id]}:5555')
 
-        find_succesor_req = {macros.action: macros.find_succesor_req, macros.query: {'id': succesor_id}}
-        # print(find_succesor_req)
-        socket.send_string(dictToJson(find_succesor_req))
+        socket.setsockopt( zmq.LINGER, 0)
+        socket.setsockopt( zmq.RCVTIMEO, macros.TIME_LIMIT )
 
-        message = socket.recv()
-        # print(message)
+        try:
+            find_succesor_req = {macros.action: macros.find_succesor_req, macros.query: {'id': succesor_id}}
+            # print(find_succesor_req)
+            socket.send_string(dictToJson(find_succesor_req))
 
-        message_dict = jsonToDict(message)
-        if isFindSuccesorRep(message_dict):
-            self.id_ip[message_dict[macros.answer]['id']] = message_dict[macros.answer]['ip']
-            return message_dict[macros.answer]['id']
+            message = socket.recv()
+            # print(message)
+
+            message_dict = jsonToDict(message)
+            if isFindSuccesorRep(message_dict):
+                self.id_ip[message_dict[macros.answer]['id']] = message_dict[macros.answer]['ip']
+                return message_dict[macros.answer]['id']
+        
+        except Exception as e:
+            print(e, f'Error askFindSuccesor to: ID: {node_id}, IP: {self.id_ip[node_id]}')
+            socket.close()
+            return -1
 
     def ansFindSuccesor(self, socket, message_dict):
         id = self.findSuccesor(message_dict[macros.query]['id'])
@@ -264,16 +305,25 @@ class ChordNode:
         socket = context.socket(zmq.REQ)
         socket.connect(f'tcp://{self.id_ip[node_id]}:5555')
 
-        ask_predecesor_req = {macros.action: macros.ask_predecesor_req}
-        socket.send_string(dictToJson(ask_predecesor_req))
+        socket.setsockopt( zmq.LINGER, 0)
+        socket.setsockopt( zmq.RCVTIMEO, macros.TIME_LIMIT )
 
-        message = socket.recv()
-        # print(message)
+        try:
+            ask_predecesor_req = {macros.action: macros.ask_predecesor_req}
+            socket.send_string(dictToJson(ask_predecesor_req))
 
-        message_dict = jsonToDict(message)
-        if isAskPredecesorRep(message_dict):
-            self.id_ip[message_dict[macros.answer]['id']] = message_dict[macros.answer]['ip']
-            return message_dict[macros.answer]['id']
+            message = socket.recv()
+            # print(message)
+
+            message_dict = jsonToDict(message)
+            if isAskPredecesorRep(message_dict):
+                self.id_ip[message_dict[macros.answer]['id']] = message_dict[macros.answer]['ip']
+                return message_dict[macros.answer]['id']
+
+        except Exception as e:
+            print(e, f'Error askPredecesor to: ID: {node_id}, IP: {self.id_ip[node_id]}')
+            socket.close()
+            return -1
 
     def ansPredecesor(self, socket, id):
         ask_predecesor_rep = {macros.action: macros.ask_predecesor_rep, macros.answer: {'id': id, 'ip': self.id_ip[id]}}
@@ -286,15 +336,24 @@ class ChordNode:
         socket = context.socket(zmq.REQ)
         socket.connect(f'tcp://{self.id_ip[node_id]}:5555')
 
-        set_predecesor_req = {macros.action: macros.set_predecesor_req, macros.query: {'id': predecesor_id, 'ip': self.id_ip[predecesor_id]}}
-        socket.send_string(dictToJson(set_predecesor_req))
+        socket.setsockopt( zmq.LINGER, 0)
+        socket.setsockopt( zmq.RCVTIMEO, macros.TIME_LIMIT )
 
-        message = socket.recv()
-        # print(message)
+        try:
+            set_predecesor_req = {macros.action: macros.set_predecesor_req, macros.query: {'id': predecesor_id, 'ip': self.id_ip[predecesor_id]}}
+            socket.send_string(dictToJson(set_predecesor_req))
 
-        message_dict = jsonToDict(message)
-        if isSetPredecesorRep(message_dict):
-            return
+            message = socket.recv()
+            # print(message)
+
+            message_dict = jsonToDict(message)
+            if isSetPredecesorRep(message_dict):
+                return 0
+            
+        except Exception as e:
+            print(e, f'Error askSetPredecesor to: ID: {node_id}, IP: {self.id_ip[node_id]}')
+            socket.close()
+            return -1
 
     def ansSetPredecesor(self, socket, message_dict):
         self.predecesor = message_dict[macros.query]['id']
@@ -313,15 +372,24 @@ class ChordNode:
         socket = context.socket(zmq.REQ)
         socket.connect(f'tcp://{self.id_ip[node_id]}:5555')
 
-        update_finger_table_req = {macros.action: macros.update_finger_table_req, macros.query: {'s': s, 'i': i, 'ip': self.id_ip[s]}}
-        socket.send_string(dictToJson(update_finger_table_req))
+        socket.setsockopt( zmq.LINGER, 0)
+        socket.setsockopt( zmq.RCVTIMEO, macros.TIME_LIMIT )
 
-        message = socket.recv()
-        # print(message)
+        try:
+            update_finger_table_req = {macros.action: macros.update_finger_table_req, macros.query: {'s': s, 'i': i, 'ip': self.id_ip[s]}}
+            socket.send_string(dictToJson(update_finger_table_req))
 
-        message_dict = jsonToDict(message)
-        if isUpdateFingerTableRep(message_dict):
-            return
+            message = socket.recv()
+            # print(message)
+
+            message_dict = jsonToDict(message)
+            if isUpdateFingerTableRep(message_dict):
+                return 0
+        
+        except Exception as e:
+            print(e, f'Error askUpdateFingerTable to: ID: {node_id}, IP: {self.id_ip[node_id]}')
+            socket.close()
+            return -1
     
     def ansUpdateFingerTable(self, socket, message_dict):
         self.id_ip[message_dict[macros.query]['s']] = message_dict[macros.query]['ip']
@@ -339,17 +407,26 @@ class ChordNode:
         socket = context.socket(zmq.REQ)
         socket.connect(f'tcp://{self.id_ip[node_id]}:5555')
 
-        ask_closest_preceding_finger_req = {macros.action: macros.ask_closest_preceding_finger_req, macros.query: {'id': id}}
-        # print(ask_closest_preceding_finger_req, node_id)
-        socket.send_string(dictToJson(ask_closest_preceding_finger_req))
+        socket.setsockopt( zmq.LINGER, 0)
+        socket.setsockopt( zmq.RCVTIMEO, macros.TIME_LIMIT )
 
-        message = socket.recv()
-        # print(message)
+        try:
+            ask_closest_preceding_finger_req = {macros.action: macros.ask_closest_preceding_finger_req, macros.query: {'id': id}}
+            # print(ask_closest_preceding_finger_req, node_id)
+            socket.send_string(dictToJson(ask_closest_preceding_finger_req))
 
-        message_dict = jsonToDict(message)
-        if isAksClosestPrecedingFingerRep(message_dict):
-            self.id_ip[message_dict[macros.answer]['id']] = message_dict[macros.answer]['ip']
-            return message_dict[macros.answer]['id']
+            message = socket.recv()
+            # print(message)
+
+            message_dict = jsonToDict(message)
+            if isAksClosestPrecedingFingerRep(message_dict):
+                self.id_ip[message_dict[macros.answer]['id']] = message_dict[macros.answer]['ip']
+                return message_dict[macros.answer]['id']
+
+        except Exception as e:
+            print(e, f'Error askClosestPrecedingFinger to: ID: {node_id}, IP: {self.id_ip[node_id]}')
+            socket.close()
+            return -1
 
     def ansClosesPrecedingFinger(self, socket, message_dict):
         id = self.closestPrecedingFinger(message_dict[macros.query]['id'])
@@ -375,14 +452,23 @@ class ChordNode:
         socket = context.socket(zmq.REQ)
         socket.connect(f'tcp://{self.id_ip[node_id]}:5555')
 
-        ask_notify_req = {macros.action: macros.notify_req, macros.query: {'id': id, 'ip': self.id_ip[id]}}
-        socket.send_string(dictToJson(ask_notify_req))
+        socket.setsockopt( zmq.LINGER, 0)
+        socket.setsockopt( zmq.RCVTIMEO, macros.TIME_LIMIT )
 
-        message = socket.recv()
+        try:
+            ask_notify_req = {macros.action: macros.notify_req, macros.query: {'id': id, 'ip': self.id_ip[id]}}
+            socket.send_string(dictToJson(ask_notify_req))
 
-        message_dict = jsonToDict(message)
-        if isNotifyRep(message_dict):
-            return
+            message = socket.recv()
+
+            message_dict = jsonToDict(message)
+            if isNotifyRep(message_dict):
+                return 0
+
+        except Exception as e:
+            print(e, f'Error askNotify to: ID: {node_id}, IP: {self.id_ip[node_id]}')
+            socket.close()
+            return -1
 
     def ansNotify(self, socket, message_dict):
         id = message_dict[macros.query]['id']
