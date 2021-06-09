@@ -120,41 +120,39 @@ class ChordNode:
 
 
     def join(self):
-        if self.know_ip != '':
-            context = zmq.Context()
+        context = zmq.Context()
 
-            socket = context.socket(zmq.REQ)
-            socket.connect(f'tcp://{self.know_ip}:5555')
+        socket = context.socket(zmq.REQ)
+        socket.connect(f'tcp://{self.know_ip}:5555')
 
-            try:
-                self.askAlive(socket)
+        try:
+            self.askAlive(socket)
+            socket.RCVTIMEO = 5000 # in milliseconds
 
-                message = socket.recv()
-                print(message)
+            message = socket.recv()
+            print(message)
 
-                message_dict = jsonToDict(message)
+            message_dict = jsonToDict(message)
 
-                if isAliveRep(message_dict):
-                    self.id_ip[message_dict[macros.id]] = message_dict[macros.ip]
+            if isAliveRep(message_dict):
+                self.id_ip[message_dict[macros.id]] = message_dict[macros.ip]
 
-                    self.initFingerTable(message_dict[macros.id])
-                    self.update_others()
+                self.initFingerTable(message_dict[macros.id])
+                self.update_others()
                 
 
-                # self.printFingerTable()
+            # self.printFingerTable()
 
-                return
+            return
 
-            except Exception as e:
-                print(e)
-                # raise e
+        except Exception as e:
+            print(e)
 
-        
-        print('Im the only node in the network')
+            print('Im the only node in the network')
 
-        for i in range(1, self.bits + 1):
-            self.finger[i].node = self.id
-        self.predecesor = self.id
+            for i in range(1, self.bits + 1):
+                self.finger[i].node = self.id
+            self.predecesor = self.id
 
 
     def initFingerTable(self, node_id):
