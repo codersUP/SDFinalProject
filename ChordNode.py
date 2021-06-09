@@ -120,39 +120,7 @@ class ChordNode:
 
 
     def join(self):
-        context = zmq.Context()
-
-        socket = context.socket(zmq.REQ)
-        socket.connect(f'tcp://{self.know_ip}:5555')
-
-        try:
-            self.askAlive(socket)
-            socket.RCVTIMEO = 5000 # in milliseconds
-
-            message = socket.recv()
-            print(message)
-
-            message_dict = jsonToDict(message)
-
-            if isAliveRep(message_dict):
-                self.id_ip[message_dict[macros.id]] = message_dict[macros.ip]
-
-                self.initFingerTable(message_dict[macros.id])
-                self.update_others()
-                
-
-            # self.printFingerTable()
-
-            return
-
-        except Exception as e:
-            print(e)
-
-            print('Im the only node in the network')
-
-            for i in range(1, self.bits + 1):
-                self.finger[i].node = self.id
-            self.predecesor = self.id
+        self.askAlive()
 
 
     def initFingerTable(self, node_id):
@@ -187,9 +155,43 @@ class ChordNode:
                 self.askUpdateFingerTable(p, s, i)
 
 
-    def askAlive(self, socket):
-        alive_req_dict = {macros.action: macros.alive_req, macros.id: self.id, macros.ip: self.ip}
-        socket.send_string(dictToJson(alive_req_dict))
+    def askAlive(self):
+        if self.know_ip == self.ip:
+            for i in range(1, self.bits + 1):
+                self.finger[i].node = self.id
+            self.predecesor = self.id
+            return
+
+        context = zmq.Context()
+
+        socket = context.socket(zmq.REQ)
+        socket.connect(f'tcp://{self.know_ip}:5555')
+
+        socket.RCVTIMEO = 5000 # in milliseconds
+        try:
+            alive_req_dict = {macros.action: macros.alive_req, macros.id: self.id, macros.ip: self.ip}
+            socket.send_string(dictToJson(alive_req_dict))
+
+            message = socket.recv()
+            print(message)
+
+            message_dict = jsonToDict(message)
+
+            if isAliveRep(message_dict):
+                self.id_ip[message_dict[macros.id]] = message_dict[macros.ip]
+
+                self.initFingerTable(message_dict[macros.id])
+                self.update_others()
+
+        except Exception as e:
+            print(e)
+
+            print('Im the only node in the network')
+
+            for i in range(1, self.bits + 1):
+                self.finger[i].node = self.id
+            self.predecesor = self.id
+        
     
     def ansAlive(self, socket, message_dict):
         self.id_ip[message_dict[macros.id]] = message_dict[macros.ip]
