@@ -33,4 +33,7 @@ ask_key_position_rep = 'ask_key_position_rep'
 notify_req = 'notify_req'
 notify_rep = 'notify_rep'
 
-TIME_LIMIT = 5000
+TIME_LIMIT = 5000 # ms
+TIME_FIXFINGERS = 10 # s
+TIME_STABILIZE = 10 # s
+TIME_INIT_STABLIZE_STUFF = 30 # s

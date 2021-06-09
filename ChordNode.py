@@ -74,18 +74,39 @@ class ChordNode:
 
 
     def findSuccesor(self, id):
-        n_prima = self.findPredecesor(id)
+        findPredecesor_id = self.findPredecesor(id)
+        if findPredecesor_id != -1:
+            n_prima = findPredecesor_id
+        # TODO findPredecesor_id Error
+
         if n_prima == id:
             return n_prima
-        return self.askSuccesor(n_prima)
+        askSuccesor_id = self.askSuccesor(n_prima)
+        if askSuccesor_id != -1:
+            return askSuccesor_id
+        # TODO askSuccesor_id Error
 
     def findPredecesor(self, id):
         n_prima = self.id
-        n_prima_s = self.askSuccesor(n_prima)
+
+        askSuccesor_id = self.askSuccesor(n_prima)
+        if askSuccesor_id != -1:
+            n_prima_s = askSuccesor_id
+        # TODO askSuccesor_id Error
+
         while not self.inRange(id, n_prima, False, n_prima_s, True):
             n_prima_temp = n_prima
-            n_prima = self.askClosestPrecedingFinger(n_prima, id)
-            n_prima_s = self.askSuccesor(n_prima)
+
+            askClosestPrecedingFinger_id = self.askClosestPrecedingFinger(n_prima, id)
+            if askClosestPrecedingFinger_id != -1:
+                n_prima = askClosestPrecedingFinger_id
+            # TODO askClosestPrecedingFinger_id Error
+
+            askSuccesor_id2 = self.askSuccesor(n_prima)
+            if askSuccesor_id2 != -1:
+                n_prima_s = askSuccesor_id2
+            # TODO askSuccesor_id2 Error
+
         if id == n_prima_s:
             return n_prima_s
         return n_prima
@@ -101,22 +122,28 @@ class ChordNode:
             self.predecesor = id  
 
     def stabilize(self):
-        x = self.askPredecesor(self.getSuccesor())
-        if self.inRange(x, self.id, False, self.getSuccesor(), False) and x != self.id:
-            self.finger[1].node = x
-        self.askNotify(self.getSuccesor(), self.id)
-        # self.printFingerTable()
+        while(True):
+            askPredecesor_id = self.askPredecesor(self.getSuccesor())
+            if askPredecesor_id != -1:
+                x = askPredecesor_id
+            #TODO askPredecesor_id Error
 
-        time.sleep(10)
-        threading.Thread(target=self.stabilize, args=()).start()
+            if self.inRange(x, self.id, False, self.getSuccesor(), False) and x != self.id:
+                self.finger[1].node = x
+            askNotify_id = self.askNotify(self.getSuccesor(), self.id)
+            # TODO askNotify_id Error
+
+            time.sleep(macros.TIME_STABILIZE)
 
     def fixFingers(self):
-        i = random.randint(1, self.bits)
-        self.finger[i].node = self.findSuccesor(self.finger[i].start)
-        # self.printFingerTable()
+        while(True):
+            i = random.randint(1, self.bits)
+            findSuccesor_id = self.findSuccesor(self.finger[i].start)
+            if findSuccesor_id != -1:
+                self.finger[i].node = findSuccesor_id
+            #TODO fixFingers Error
 
-        time.sleep(10)
-        threading.Thread(target=self.fixFingers, args=()).start()
+            time.sleep(macros.TIME_FIXFINGERS)
 
 
     def join(self):
@@ -191,7 +218,8 @@ class ChordNode:
             p = self.predecesor
 
             if(p != s):
-                self.askUpdateFingerTable(p, s, i)
+                askUpdateFingerTable_id = self.askUpdateFingerTable(p, s, i)
+                # TODO updateFingerTable Error
 
 
     def askAlive(self, ip):
@@ -479,7 +507,7 @@ class ChordNode:
 
 
     def stabilizationStuff(self):
-        time.sleep(30)
+        time.sleep(macros.TIME_INIT_STABLIZE_STUFF)
         threading.Thread(target=self.stabilize, args=()).start()
         threading.Thread(target=self.fixFingers, args=()).start()
 
