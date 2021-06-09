@@ -23,8 +23,9 @@ def main():
     known_ip = arg_parser().known_ip
 
     cn = ChordNode.ChordNode(ip, id, bits, known_ip)
-    cn.run()
     cn.join()
+    print('JOINED')
+    cn.run()
 
 if __name__ == '__main__':
     main()
