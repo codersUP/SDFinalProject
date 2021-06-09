@@ -8,8 +8,8 @@ import random
 class SubFinger:
     def __init__(self):
         self.start = 0
-        self.interval = 0
         self.node = 0
+        self.node_succesor = 0
 
 
 class ChordNode:
@@ -120,7 +120,23 @@ class ChordNode:
 
 
     def join(self):
-        self.askAlive()
+        if self.know_ip == self.ip:
+            for i in range(1, self.bits + 1):
+                self.finger[i].node = self.id
+            self.predecesor = self.id
+            return
+
+        id = self.askAlive(self.know_ip)
+        if id != -1:
+            self.initFingerTable(id)
+            self.update_others()
+
+        else:
+            print('Im the only node in the network')
+
+            for i in range(1, self.bits + 1):
+                self.finger[i].node = self.id
+            self.predecesor = self.id
 
 
     def initFingerTable(self, node_id):
@@ -155,19 +171,14 @@ class ChordNode:
                 self.askUpdateFingerTable(p, s, i)
 
 
-    def askAlive(self):
-        if self.know_ip == self.ip:
-            for i in range(1, self.bits + 1):
-                self.finger[i].node = self.id
-            self.predecesor = self.id
-            return
-
+    def askAlive(self, ip):
         context = zmq.Context()
 
         socket = context.socket(zmq.REQ)
-        socket.connect(f'tcp://{self.know_ip}:5555')
+        socket.connect(f'tcp://{ip}:5555')
 
-        socket.RCVTIMEO = 5000 # in milliseconds
+        socket.setsockopt( zmq.LINGER, 0)
+        socket.setsockopt( zmq.RCVTIMEO, macros.TIME_LIMIT )
         try:
             alive_req_dict = {macros.action: macros.alive_req, macros.id: self.id, macros.ip: self.ip}
             socket.send_string(dictToJson(alive_req_dict))
@@ -179,19 +190,13 @@ class ChordNode:
 
             if isAliveRep(message_dict):
                 self.id_ip[message_dict[macros.id]] = message_dict[macros.ip]
-
-                self.initFingerTable(message_dict[macros.id])
-                self.update_others()
+                return message_dict[macros.id]
 
         except Exception as e:
             print(e)
+            socket.close()
+            return -1
 
-            print('Im the only node in the network')
-
-            for i in range(1, self.bits + 1):
-                self.finger[i].node = self.id
-            self.predecesor = self.id
-        
     
     def ansAlive(self, socket, message_dict):
         self.id_ip[message_dict[macros.id]] = message_dict[macros.ip]
@@ -420,3 +425,13 @@ class ChordNode:
             return lwb <= key and key <= upb 
         else:
             return (lwb <= key and key <= upb + (2**self.bits)) or (lwb <= key + (2**self.bits) and key <= upb)
+
+    def searchNodeSuccesorInFinger(self, id):
+        for f in self.finger:
+            if f.node == id:
+                return f.node_succesor
+
+    def assingSuccesorNodeToNode(self, id):
+        for f in self.finger:
+            if f.node == id:
+                f.node = f.node_succesor
