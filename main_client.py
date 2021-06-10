@@ -22,6 +22,8 @@ def main():
         id_sha.update(n.encode())
         id = int.from_bytes(id_sha.digest(), sys.byteorder)
 
+        id = int(n)
+
         print(cn.askKeyPosition(id))
 
 if __name__ == '__main__':

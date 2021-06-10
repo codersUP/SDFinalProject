@@ -9,7 +9,6 @@ class SubFinger:
     def __init__(self):
         self.start = -1
         self.node = -1
-        self.node_succesor = -1
 
 
 class ChordNode:
@@ -26,6 +25,8 @@ class ChordNode:
         self.predecesor = self.id
 
         self.id_ip = {self.id: self.ip}
+
+        self.succesors = []
 
     def getSuccesor(self):
         return self.finger[1].node
@@ -77,14 +78,27 @@ class ChordNode:
         findPredecesor_id = self.findPredecesor(id)
         if findPredecesor_id != -1:
             n_prima = findPredecesor_id
-        # TODO findPredecesor_id Error
+        # nunca findPredecesor debe retornar -1
+        else:
+            pass
 
         if n_prima == id:
             return n_prima
         askSuccesor_id = self.askSuccesor(n_prima)
         if askSuccesor_id != -1:
             return askSuccesor_id
-        # TODO askSuccesor_id Error
+        # n_prima is down
+        else:
+            while(True):
+                askFindSuccesor_id = self.askFindSuccesor(self.succesors[0], id)
+                if askFindSuccesor_id != -1:
+                    return askFindSuccesor_id
+                # self.succesors[0] is down
+                else:
+                    self.updateFingerOldId(self.succesors[0], self.succesors[1])
+                    self.succesors = self.succesors[1:]
+                    
+
 
     def findPredecesor(self, id):
         n_prima = self.id
@@ -92,7 +106,9 @@ class ChordNode:
         askSuccesor_id = self.askSuccesor(n_prima)
         if askSuccesor_id != -1:
             n_prima_s = askSuccesor_id
-        # TODO askSuccesor_id Error
+        # n_prima is down aunque no debe haber error nunca aquí
+        else:
+            pass
 
         while not self.inRange(id, n_prima, False, n_prima_s, True):
             n_prima_temp = n_prima
@@ -100,12 +116,18 @@ class ChordNode:
             askClosestPrecedingFinger_id = self.askClosestPrecedingFinger(n_prima, id)
             if askClosestPrecedingFinger_id != -1:
                 n_prima = askClosestPrecedingFinger_id
-            # TODO askClosestPrecedingFinger_id Error
+            # n_prima is down
+            else:
+                break
+
 
             askSuccesor_id2 = self.askSuccesor(n_prima)
             if askSuccesor_id2 != -1:
                 n_prima_s = askSuccesor_id2
-            # TODO askSuccesor_id2 Error
+            # n_prima is down
+            else:
+                n_prima = n_prima_temp
+                break
 
         if id == n_prima_s:
             return n_prima_s
@@ -118,21 +140,38 @@ class ChordNode:
         return self.id
 
     def notify(self, id):
-        if self.inRange(id, self.predecesor, False, self.id, False):
-            self.predecesor = id  
+        print(f'NOTIFY {id}')
+        askAlive_id = self.askAlive(self.id_ip[self.predecesor])
+        if askAlive_id == -1:
+            self.predecesor = id
+        elif self.inRange(id, self.predecesor, False, self.id, False):
+            self.predecesor = id
 
     def stabilize(self):
         while(True):
-            askPredecesor_id = self.askPredecesor(self.getSuccesor())
-            if askPredecesor_id != -1:
-                x = askPredecesor_id
-            #TODO askPredecesor_id Error
+            while(True):
+                askPredecesor_id = self.askPredecesor(self.getSuccesor())
+                if askPredecesor_id != -1:
+                    x = askPredecesor_id
+                    break
+                # self.getSuccesor() is down
+                else:
+                    self.updateFingerOldId(self.succesors[0], self.succesors[1])
+                    self.succesors = self.succesors[1:]
 
             if self.inRange(x, self.id, False, self.getSuccesor(), False) and x != self.id:
                 self.finger[1].node = x
-            askNotify_id = self.askNotify(self.getSuccesor(), self.id)
-            # TODO askNotify_id Error
 
+            while(True):
+                askNotify_id = self.askNotify(self.getSuccesor(), self.id)
+                # self.getSuccesor() is down
+                if askNotify_id != -1:
+                    break
+                else:
+                    self.updateFingerOldId(self.succesors[0], self.succesors[1])
+                    self.succesors = self.succesors[1:]
+
+            self.printFingerTable()
             time.sleep(macros.TIME_STABILIZE)
 
     def fixFingers(self):
@@ -141,9 +180,26 @@ class ChordNode:
             findSuccesor_id = self.findSuccesor(self.finger[i].start)
             if findSuccesor_id != -1:
                 self.finger[i].node = findSuccesor_id
-            #TODO fixFingers Error
+            #TODO fixFingers Error aunque nunca debe dar error
 
             time.sleep(macros.TIME_FIXFINGERS)
+
+    def updateSuccesors(self):
+        while(True):
+            len_s = len(self.succesors)
+            while len_s < macros.SUCCESORS_NUMBER:
+                askSuccesor_id = self.askSuccesor(self.succesors[-1])
+                if askSuccesor_id != -1:
+                    self.succesors.insert(len_s, askSuccesor_id)
+                # succesors[-1] is down
+                else:
+                    self.updateFingerOldId(self.succesors[-1], self.succesors[-2])
+                    self.succesors = self.succesors[:-1]
+                len_s = len(self.succesors)
+
+            print(f'Succesors {self.succesors}')
+            
+            time.sleep(macros.TIME_SUCCESORS_REFRESH) 
 
 
     def join(self):
@@ -161,6 +217,7 @@ class ChordNode:
             self.finger[i].node = self.id
             self.finger[i].node_succesor = self.id
         self.predecesor = self.id
+        self.succesors.insert(0, self.id)
 
         return
 
@@ -171,6 +228,7 @@ class ChordNode:
         find_succesor_id = self.askFindSuccesor(node_id, self.finger[1].start)
         if find_succesor_id != -1:
             self.finger[1].node = find_succesor_id
+            self.succesors.insert(0, find_succesor_id)
         else:
             raise Exception('ERROR joining')
 
@@ -219,8 +277,11 @@ class ChordNode:
 
             if(p != s):
                 askUpdateFingerTable_id = self.askUpdateFingerTable(p, s, i)
-                # TODO updateFingerTable Error
-
+                # predecesor is down
+                if askUpdateFingerTable_id == -1:
+                    # TODO
+                    pass
+    
 
     def askAlive(self, ip):
         context = zmq.Context()
@@ -465,6 +526,7 @@ class ChordNode:
     
     def ansAskKeyPosition(self, socket, message_dict):
         id = message_dict[macros.query]['id']
+        print(f'una querie {id}')
         ans_id = self.findSuccesor(id)
 
         ans_ask_key_position_rep = {macros.action: macros.ask_key_position_rep, macros.answer: {'id': ans_id, 'ip': self.id_ip[ans_id]}}
@@ -507,6 +569,7 @@ class ChordNode:
 
 
     def stabilizationStuff(self):
+        threading.Thread(target=self.updateSuccesors, args=()).start()
         time.sleep(macros.TIME_INIT_STABLIZE_STUFF)
         threading.Thread(target=self.stabilize, args=()).start()
         threading.Thread(target=self.fixFingers, args=()).start()
@@ -521,7 +584,7 @@ class ChordNode:
         print('Finger table:')
         print(f'Predecesor: {self.predecesor}')
         for i in range(1, self.bits + 1):
-            print(f'{self.finger[i].start} {self.finger[i].interval} {self.finger[i].node}')
+            print(f'{self.finger[i].start} {self.finger[i].node}')
         print('---------')
 
     def inRange(self, key, lwb, lequal, upb, requal):
@@ -540,12 +603,19 @@ class ChordNode:
         else:
             return (lwb <= key and key <= upb + (2**self.bits)) or (lwb <= key + (2**self.bits) and key <= upb)
 
-    def searchNodeSuccesorInFinger(self, id):
-        for f in self.finger:
-            if f.node == id:
-                return f.node_succesor
 
-    def assingSuccesorNodeToNode(self, id):
+    def indexAtFinger(self, id):
+        for i, f in enumerate(self.finger):
+            if inRange(id, f.start, True, f.node, True):
+                return i - 1
+
+    def indexAtSuccesors(self, id):
+        for i in range(len(self.succesors) - 1):
+            if inRange(id, self.succesors[i], True, self.succesors[i + 1], False):
+                return i + 1
+
+    def updateFingerOldId(self, id_old, id_new):
         for f in self.finger:
-            if f.node == id:
-                f.node = f.node_succesor
+            if f.node == id_old:
+                f.node = id_new
+                
