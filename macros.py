@@ -27,8 +27,11 @@ update_finger_table_rep = 'update_finger_table_rep'
 ask_closest_preceding_finger_req = 'ask_closest_preceding_finger_req'
 ask_closest_preceding_finger_rep = 'ask_closest_preceding_finger_rep'
 
-ask_key_position_req = 'ask_key_position_req'
-ask_key_position_rep = 'ask_key_position_rep'
+ask_url_client_req = 'ask_url_client_req'
+ask_url_client_rep = 'ask_url_client_rep'
+
+ask_url_server_req = 'ask_url_server_req'
+ask_url_server_rep = 'ask_url_server_rep'
 
 notify_req = 'notify_req'
 notify_rep = 'notify_rep'

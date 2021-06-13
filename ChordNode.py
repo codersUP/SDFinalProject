@@ -4,6 +4,8 @@ import macros
 import time
 from parser import *
 import random
+import hashlib
+import sys
 
 class SubFinger:
     def __init__(self):
@@ -27,6 +29,8 @@ class ChordNode:
         self.id_ip = {self.id: self.ip}
 
         self.succesors = []
+
+        self.keys = {}
 
     def getSuccesor(self):
         return self.finger[1].node
@@ -65,8 +69,11 @@ class ChordNode:
             if isAksClosestPrecedingFingerReq(message_dict):
                 self.ansClosesPrecedingFinger(socket, message_dict)
 
-            if isAskKeyPositionReq(message_dict):
-                self.ansAskKeyPosition(socket, message_dict)
+            if isAskUrlServerReq(message_dict):
+                self.ansUrlServer(socket, message_dict)
+
+            if isAskUrlClientReq(message_dict):
+                self.ansUrlClient(socket, message_dict)
 
             if isNotifyReq(message_dict):
                 self.ansNotify(socket, message_dict)
@@ -197,7 +204,7 @@ class ChordNode:
                     self.succesors = self.succesors[:-1]
                 len_s = len(self.succesors)
 
-            print(f'Succesors {self.succesors}')
+            # print(f'Succesors {self.succesors}')
             
             time.sleep(macros.TIME_SUCCESORS_REFRESH) 
 
@@ -523,14 +530,65 @@ class ChordNode:
         ask_closest_preceding_finger_rep = {macros.action: macros.ask_closest_preceding_finger_rep, macros.answer: {'id': id, 'ip': ip}}
         socket.send_string(dictToJson(ask_closest_preceding_finger_rep))
 
-    
-    def ansAskKeyPosition(self, socket, message_dict):
-        id = message_dict[macros.query]['id']
-        print(f'una querie {id}')
-        ans_id = self.findSuccesor(id)
 
-        ans_ask_key_position_rep = {macros.action: macros.ask_key_position_rep, macros.answer: {'id': ans_id, 'ip': self.id_ip[ans_id]}}
-        socket.send_string(dictToJson(ans_ask_key_position_rep))
+    def askUrlServer(self, node_id, key_url):
+        if node_id == self.id:
+            if key_url in self.keys:
+                return self.keys[key_url]
+            else:
+                self.keys[key_url] = len(key_url)
+                return self.keys[key_url]
+
+        context = zmq.Context()
+
+        socket = context.socket(zmq.REQ)
+        socket.connect(f'tcp://{self.id_ip[node_id]}:5555')
+
+        try:
+            ask_url_server_req = {macros.action: macros.ask_url_server_req , macros.query: {'url': key_url}}
+            # print(ask_key_position_req)
+            socket.send_string(dictToJson(ask_url_server_req))
+
+            message = socket.recv()
+            print(message)
+
+            message_dict = jsonToDict(message)
+            if isAskUrlServerRep(message_dict):
+                self.id_ip[message_dict[macros.answer]['id']] = message_dict[macros.answer]['ip']
+                return message_dict[macros.answer]['html']
+
+        except Exception as e:
+            print(e, f'Error askKeyPosition to: ID: {node_id}, IP: {self.id_ip[node_id]}')
+            socket.close()
+            return -1
+    
+    def ansUrlServer(self, socket, message_dict):
+        key_url = message_dict[macros.query]['url']
+
+        if key_url not in self.keys:
+            self.keys[key_url] = len(key_url)
+
+        ask_url_server_rep = {macros.action: macros.ask_url_server_rep, macros.answer: {'id': self.id, 'ip': self.ip, 'html': self.keys[key_url]}}
+        socket.send_string(dictToJson(ask_url_server_rep))
+
+
+    def ansUrlClient(self, socket, message_dict):
+        url = message_dict[macros.query]['url']
+
+        id_sha = hashlib.sha256()
+        id_sha.update(url.encode())
+        id = int.from_bytes(id_sha.digest(), sys.byteorder)
+        id %= 2**self.bits
+
+        print(f'ID DE LA QUERY {id}')
+        ans_id = self.findSuccesor(id)
+        if ans_id != -1:
+            print(f'preguntandole a {ans_id}')
+            html = self.askUrlServer(ans_id, url)
+
+            ask_url_client_rep = {macros.action: macros.ask_url_client_rep, macros.answer: {'id': ans_id, 'ip': self.id_ip[ans_id], 'html': html}}
+            socket.send_string(dictToJson(ask_url_client_rep))
+        #TODO ERROR AQUI aunque no debe dar error nunca
 
 
     def askNotify(self, node_id, id):
@@ -585,6 +643,7 @@ class ChordNode:
         print(f'Predecesor: {self.predecesor}')
         for i in range(1, self.bits + 1):
             print(f'{self.finger[i].start} {self.finger[i].node}')
+        print(self.keys)
         print('---------')
 
     def inRange(self, key, lwb, lequal, upb, requal):

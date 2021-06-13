@@ -2,7 +2,6 @@ import zmq
 import argparse
 import ChordClient
 import os
-import hashlib
 import sys
 
 def arg_parser():
@@ -16,15 +15,9 @@ def main():
 
     cn = ChordClient.ChordClient(known_ip)
     while True:
-        n = input()
+        url = input()
 
-        id_sha = hashlib.sha256()
-        id_sha.update(n.encode())
-        id = int.from_bytes(id_sha.digest(), sys.byteorder)
-
-        id = int(n)
-
-        print(cn.askKeyPosition(id))
+        print(cn.askKeyPosition(url))
 
 if __name__ == '__main__':
     main()

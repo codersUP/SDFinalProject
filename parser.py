@@ -57,11 +57,19 @@ def isAksClosestPrecedingFingerRep(message_dict):
     return message_dict[macros.action] == macros.ask_closest_preceding_finger_rep
 
 
-def isAskKeyPositionReq(message_dict):
-    return message_dict[macros.action] == macros.ask_key_position_req
+def isAskUrlClientReq(message_dict):
+    return message_dict[macros.action] == macros.ask_url_client_req
 
-def isAskKeyPositionRep(message_dict):
-    return message_dict[macros.action] == macros.ask_key_position_rep
+def isAskUrlClientRep(message_dict):
+    return message_dict[macros.action] == macros.ask_url_client_rep
+
+
+def isAskUrlServerReq(message_dict):
+    return message_dict[macros.action] == macros.ask_url_server_req
+
+def isAskUrlServerRep(message_dict):
+    return message_dict[macros.action] == macros.ask_url_server_rep
+
 
 def isNotifyReq(message_dict):
     return message_dict[macros.action] == macros.notify_req
