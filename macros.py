@@ -1,10 +1,10 @@
 action = 'action'
-join = 'join'
 
 id = 'id'
 ip = 'ip'
 query = 'query'
 answer = 'answer'
+keys = 'keys'
 
 alive_req = 'alive_req'
 alive_rep = 'alive_rep'
@@ -35,6 +35,9 @@ ask_url_server_rep = 'ask_url_server_rep'
 
 notify_req = 'notify_req'
 notify_rep = 'notify_rep'
+
+send_keys_req = 'send_keys_req'
+send_keys_rep = 'send_keys_rep'
 
 TIME_LIMIT = 5000 # ms
 TIME_FIXFINGERS = 1 # s

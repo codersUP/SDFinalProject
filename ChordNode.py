@@ -31,6 +31,7 @@ class ChordNode:
         self.succesors = []
 
         self.keys = {}
+        self.keys_replic = {}
 
     def getSuccesor(self):
         return self.finger[1].node
@@ -77,6 +78,9 @@ class ChordNode:
 
             if isNotifyReq(message_dict):
                 self.ansNotify(socket, message_dict)
+
+            if isSendKeysReq(message_dict):
+                self.ansSendKeys(socket, message_dict)
 
             # self.printFingerTable()
 
@@ -146,13 +150,12 @@ class ChordNode:
                 return self.finger[i].node
         return self.id
 
-    def notify(self, id):
+    def notify(self, id, keys):
         print(f'NOTIFY {id}')
         askAlive_id = self.askAlive(self.id_ip[self.predecesor])
-        if askAlive_id == -1:
+        if askAlive_id == -1 or self.inRange(id, self.predecesor, False, self.id, False) or id == self.predecesor:
             self.predecesor = id
-        elif self.inRange(id, self.predecesor, False, self.id, False):
-            self.predecesor = id
+            self.keys_replic = keys
 
     def stabilize(self):
         while(True):
@@ -578,6 +581,8 @@ class ChordNode:
         id_sha = hashlib.sha256()
         id_sha.update(url.encode())
         id = int.from_bytes(id_sha.digest(), sys.byteorder)
+
+        id = len(url)
         id %= 2**self.bits
 
         print(f'ID DE LA QUERY {id}')
@@ -585,6 +590,7 @@ class ChordNode:
         if ans_id != -1:
             print(f'preguntandole a {ans_id}')
             html = self.askUrlServer(ans_id, url)
+            # TODO ERROR al pedir el html
 
             ask_url_client_rep = {macros.action: macros.ask_url_client_rep, macros.answer: {'id': ans_id, 'ip': self.id_ip[ans_id], 'html': html}}
             socket.send_string(dictToJson(ask_url_client_rep))
@@ -593,7 +599,7 @@ class ChordNode:
 
     def askNotify(self, node_id, id):
         if node_id == self.id:
-            return self.notify(id)
+            return self.notify(id, self.keys)
 
         context = zmq.Context()
 
@@ -604,7 +610,7 @@ class ChordNode:
         socket.setsockopt( zmq.RCVTIMEO, macros.TIME_LIMIT )
 
         try:
-            ask_notify_req = {macros.action: macros.notify_req, macros.query: {'id': id, 'ip': self.id_ip[id]}}
+            ask_notify_req = {macros.action: macros.notify_req, macros.query: {'id': id, 'ip': self.id_ip[id]}, macros.keys: self.keys}
             socket.send_string(dictToJson(ask_notify_req))
 
             message = socket.recv()
@@ -620,10 +626,18 @@ class ChordNode:
 
     def ansNotify(self, socket, message_dict):
         id = message_dict[macros.query]['id']
+        keys = message_dict[macros.keys]
         self.id_ip[id] = message_dict[macros.query]['ip']
-        self.notify(id)
+        self.notify(id, keys)
         ask_notify_rep = {macros.action: macros.notify_rep}
         socket.send_string(dictToJson(ask_notify_rep))
+
+
+    def askSendKeys(self, node_id):
+        pass
+
+    def ansSendKeys(self, socket, message_dict):
+        pass
 
 
     def stabilizationStuff(self):
@@ -644,6 +658,7 @@ class ChordNode:
         for i in range(1, self.bits + 1):
             print(f'{self.finger[i].start} {self.finger[i].node}')
         print(self.keys)
+        print(self.keys_replic)
         print('---------')
 
     def inRange(self, key, lwb, lequal, upb, requal):

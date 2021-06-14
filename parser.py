@@ -76,3 +76,10 @@ def isNotifyReq(message_dict):
 
 def isNotifyRep(message_dict):
     return message_dict[macros.action] == macros.notify_rep
+
+
+def isSendKeysReq(message_dict):
+    return message_dict[macros.action] == macros.send_keys_req
+
+def isSendKeysRep(message_dict):
+    return message_dict[macros.action] == macros.send_keys_rep
