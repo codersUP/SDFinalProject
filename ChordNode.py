@@ -79,9 +79,6 @@ class ChordNode:
             if isNotifyReq(message_dict):
                 self.ansNotify(socket, message_dict)
 
-            if isSendKeysReq(message_dict):
-                self.ansSendKeys(socket, message_dict)
-
             # self.printFingerTable()
 
 
@@ -108,8 +105,6 @@ class ChordNode:
                 else:
                     self.updateFingerOldId(self.succesors[0], self.succesors[1])
                     self.succesors = self.succesors[1:]
-                    
-
 
     def findPredecesor(self, id):
         n_prima = self.id
@@ -151,8 +146,15 @@ class ChordNode:
         return self.id
 
     def notify(self, id, keys):
-        print(f'NOTIFY {id}')
-        askAlive_id = self.askAlive(self.id_ip[self.predecesor])
+        # print(f'NOTIFY {id}')
+        if id != self.predecesor:
+            askAlive_id = self.askAlive(self.id_ip[self.predecesor])
+        else:
+            askAlive_id = 0
+
+        if askAlive_id == -1:
+            self.updateReplicKeys()
+
         if askAlive_id == -1 or self.inRange(id, self.predecesor, False, self.id, False) or id == self.predecesor:
             self.predecesor = id
             self.keys_replic = keys
@@ -447,6 +449,7 @@ class ChordNode:
 
             message_dict = jsonToDict(message)
             if isSetPredecesorRep(message_dict):
+                self.keys = message_dict[macros.keys]
                 return 0
             
         except Exception as e:
@@ -455,9 +458,18 @@ class ChordNode:
             return -1
 
     def ansSetPredecesor(self, socket, message_dict):
-        self.predecesor = message_dict[macros.query]['id']
-        self.id_ip[message_dict[macros.query]['id']] = message_dict[macros.query]['ip']
-        set_predecesor_rep = {macros.action: macros.set_predecesor_rep}
+        id = message_dict[macros.query]['id']
+
+        keys_ret = {}
+        for url, html in self.keys.items():
+            url_id = self.getIdFromUrl(url)
+            if self.predecesor < url_id and url_id <= id:
+                keys_ret[url] = html
+
+        self.predecesor = id
+        self.id_ip[id] = message_dict[macros.query]['ip']
+
+        set_predecesor_rep = {macros.action: macros.set_predecesor_rep, macros.keys: keys_ret}
         socket.send_string(dictToJson(set_predecesor_rep))
 
 
@@ -578,12 +590,7 @@ class ChordNode:
     def ansUrlClient(self, socket, message_dict):
         url = message_dict[macros.query]['url']
 
-        id_sha = hashlib.sha256()
-        id_sha.update(url.encode())
-        id = int.from_bytes(id_sha.digest(), sys.byteorder)
-
-        id = len(url)
-        id %= 2**self.bits
+        id = self.getIdFromUrl(url)
 
         print(f'ID DE LA QUERY {id}')
         ans_id = self.findSuccesor(id)
@@ -631,13 +638,6 @@ class ChordNode:
         self.notify(id, keys)
         ask_notify_rep = {macros.action: macros.notify_rep}
         socket.send_string(dictToJson(ask_notify_rep))
-
-
-    def askSendKeys(self, node_id):
-        pass
-
-    def ansSendKeys(self, socket, message_dict):
-        pass
 
 
     def stabilizationStuff(self):
@@ -692,4 +692,17 @@ class ChordNode:
         for f in self.finger:
             if f.node == id_old:
                 f.node = id_new
-                
+
+    def updateReplicKeys(self):
+        for url, html in self.keys_replic.items():
+            self.keys[url] = html
+
+    def getIdFromUrl(self, url):
+        # id_sha = hashlib.sha256()
+        # id_sha.update(url.encode())
+        # id = int.from_bytes(id_sha.digest(), sys.byteorder)
+
+        id = len(url)
+        id %= 2**self.bits
+
+        return id
