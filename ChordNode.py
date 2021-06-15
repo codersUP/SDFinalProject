@@ -598,11 +598,12 @@ class ChordNode:
 
     def ansUrlClient(self, socket, message_dict):
         url = message_dict[macros.query]['url']
+        depth = message_dict[macros.query][macros.depth]
         client_ip = message_dict[macros.client_ip]
         client_port = message_dict[macros.client_port]
         client_query_id = message_dict[macros.client_query_id]
 
-        print(f'Query desde {client_ip}:{client_port} URL: {url} QUERY_ID: {client_query_id}')
+        print(f'Query desde {client_ip}:{client_port} URL: {url} DEPTH: {depth} QUERY_ID: {client_query_id}')
         # mandar a hacer la tarea
         self.askUrlEnd(client_ip, client_port, client_query_id)
 

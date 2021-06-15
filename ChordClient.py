@@ -64,7 +64,7 @@ class ChordClient:
             return -1
 
 
-    def askUrl(self, key_url):
+    def askUrl(self, key_url, depth=5):
         for ip in self.chord_nodes_ip:
             context = zmq.Context()
 
@@ -75,7 +75,7 @@ class ChordClient:
             socket.setsockopt( zmq.RCVTIMEO, macros.TIME_LIMIT )
 
             try:
-                ask_url_client_req = {macros.action: macros.ask_url_client_req, macros.query: {'url': key_url}, macros.client_ip: self.ip, macros.client_port: self.port, macros.client_query_id: self.query_id}
+                ask_url_client_req = {macros.action: macros.ask_url_client_req, macros.query: {'url': key_url, 'depth': depth}, macros.client_ip: self.ip, macros.client_port: self.port, macros.client_query_id: self.query_id}
                 socket.send_string(dictToJson(ask_url_client_req))
 
                 message = socket.recv()
