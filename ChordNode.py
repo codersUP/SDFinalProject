@@ -79,6 +79,9 @@ class ChordNode:
             if isNotifyReq(message_dict):
                 self.ansNotify(socket, message_dict)
 
+            if isClientJoinReq(message_dict):
+                self.ansJoin(socket, message_dict)
+
             # self.printFingerTable()
 
 
@@ -392,6 +395,7 @@ class ChordNode:
 
     def ansFindSuccesor(self, socket, message_dict):
         id = self.findSuccesor(message_dict[macros.query]['id'])
+        # añadir ask alive para añadir el ip del id a mi
         find_succesor_rep = {macros.action: macros.find_succesor_rep, macros.answer: {'id': id, 'ip': self.id_ip[id]}}
         # print(find_succesor_rep)
         socket.send_string(dictToJson(find_succesor_rep))
@@ -640,6 +644,16 @@ class ChordNode:
         socket.send_string(dictToJson(ask_notify_rep))
 
 
+    def ansJoin(self, socket, message_dict):
+        ips = {self.ip: 1}
+        for f in self.finger[1:]:
+            ips[self.id_ip[f.node]] = 1
+        ips_list = [i for i in ips.keys()]
+
+        client_join_rep = {macros.action: macros.client_join_rep, macros.answer: {macros.ip: ips_list}}
+        socket.send_string(dictToJson(client_join_rep))
+
+
     def stabilizationStuff(self):
         threading.Thread(target=self.updateSuccesors, args=()).start()
         time.sleep(macros.TIME_INIT_STABLIZE_STUFF)
@@ -677,16 +691,6 @@ class ChordNode:
         else:
             return (lwb <= key and key <= upb + (2**self.bits)) or (lwb <= key + (2**self.bits) and key <= upb)
 
-
-    def indexAtFinger(self, id):
-        for i, f in enumerate(self.finger):
-            if inRange(id, f.start, True, f.node, True):
-                return i - 1
-
-    def indexAtSuccesors(self, id):
-        for i in range(len(self.succesors) - 1):
-            if inRange(id, self.succesors[i], True, self.succesors[i + 1], False):
-                return i + 1
 
     def updateFingerOldId(self, id_old, id_new):
         for f in self.finger:

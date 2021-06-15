@@ -36,6 +36,9 @@ ask_url_server_rep = 'ask_url_server_rep'
 notify_req = 'notify_req'
 notify_rep = 'notify_rep'
 
+client_join_req = 'client_join_req'
+client_join_rep = 'client_join_rep'
+
 TIME_LIMIT = 5000 # ms
 TIME_FIXFINGERS = 1 # s
 TIME_STABILIZE = 1 # s
