@@ -397,7 +397,6 @@ class ChordNode:
 
     def ansFindSuccesor(self, socket, message_dict):
         id = self.findSuccesor(message_dict[macros.query]['id'])
-        # añadir ask alive para añadir el ip del id a mi
         find_succesor_rep = {macros.action: macros.find_succesor_rep, macros.answer: {'id': id, 'ip': self.id_ip[id]}}
         # print(find_succesor_rep)
         socket.send_string(dictToJson(find_succesor_rep))
@@ -456,6 +455,7 @@ class ChordNode:
             message_dict = jsonToDict(message)
             if isSetPredecesorRep(message_dict):
                 self.keys = message_dict[macros.keys]
+                self.keys_replic = message_dict[macros.keys_replic]
                 return 0
             
         except Exception as e:
@@ -466,16 +466,19 @@ class ChordNode:
     def ansSetPredecesor(self, socket, message_dict):
         id = message_dict[macros.query]['id']
 
+        keys_replic_ret = self.keys_replic.copy()
         keys_ret = {}
         for url, html in self.keys.items():
             url_id = self.getIdFromUrl(url)
             if self.predecesor < url_id and url_id <= id:
                 keys_ret[url] = html
 
+        self.keys_replic = keys_ret
+
         self.predecesor = id
         self.id_ip[id] = message_dict[macros.query]['ip']
 
-        set_predecesor_rep = {macros.action: macros.set_predecesor_rep, macros.keys: keys_ret}
+        set_predecesor_rep = {macros.action: macros.set_predecesor_rep, macros.keys: keys_ret, macros.keys_replic: keys_replic_ret}
         socket.send_string(dictToJson(set_predecesor_rep))
 
 
