@@ -7,6 +7,7 @@ answer = 'answer'
 keys = 'keys'
 keys_replic = 'keys_replic'
 html = 'html'
+depth = 'depth'
 
 client_ip = 'client_ip'
 client_port = 'client_port'
