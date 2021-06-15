@@ -33,6 +33,8 @@ class ChordNode:
         self.keys = {}
         self.keys_replic = {}
 
+        self.works = {}
+
     def getSuccesor(self):
         return self.finger[1].node
 
@@ -78,6 +80,9 @@ class ChordNode:
 
             if isNotifyReq(message_dict):
                 self.ansNotify(socket, message_dict)
+
+            if isClientJoinReq(message_dict):
+                self.ansJoin(socket, message_dict)
 
             # self.printFingerTable()
 
@@ -450,6 +455,7 @@ class ChordNode:
             message_dict = jsonToDict(message)
             if isSetPredecesorRep(message_dict):
                 self.keys = message_dict[macros.keys]
+                self.keys_replic = message_dict[macros.keys_replic]
                 return 0
             
         except Exception as e:
@@ -460,16 +466,19 @@ class ChordNode:
     def ansSetPredecesor(self, socket, message_dict):
         id = message_dict[macros.query]['id']
 
+        keys_replic_ret = self.keys_replic.copy()
         keys_ret = {}
         for url, html in self.keys.items():
             url_id = self.getIdFromUrl(url)
             if self.predecesor < url_id and url_id <= id:
                 keys_ret[url] = html
 
+        self.keys_replic = keys_ret
+
         self.predecesor = id
         self.id_ip[id] = message_dict[macros.query]['ip']
 
-        set_predecesor_rep = {macros.action: macros.set_predecesor_rep, macros.keys: keys_ret}
+        set_predecesor_rep = {macros.action: macros.set_predecesor_rep, macros.keys: keys_ret, macros.keys_replic: keys_replic_ret}
         socket.send_string(dictToJson(set_predecesor_rep))
 
 
@@ -589,19 +598,41 @@ class ChordNode:
 
     def ansUrlClient(self, socket, message_dict):
         url = message_dict[macros.query]['url']
+        client_ip = message_dict[macros.client_ip]
+        client_port = message_dict[macros.client_port]
+        client_query_id = message_dict[macros.client_query_id]
 
-        id = self.getIdFromUrl(url)
+        print(f'Query desde {client_ip}:{client_port} URL: {url} QUERY_ID: {client_query_id}')
+        # mandar a hacer la tarea
+        self.askUrlEnd(client_ip, client_port, client_query_id)
 
-        print(f'ID DE LA QUERY {id}')
-        ans_id = self.findSuccesor(id)
-        if ans_id != -1:
-            print(f'preguntandole a {ans_id}')
-            html = self.askUrlServer(ans_id, url)
-            # TODO ERROR al pedir el html
+        ask_url_client_rep = {macros.action: macros.ask_url_client_rep}
+        socket.send_string(dictToJson(ask_url_client_rep))
 
-            ask_url_client_rep = {macros.action: macros.ask_url_client_rep, macros.answer: {'id': ans_id, 'ip': self.id_ip[ans_id], 'html': html}}
-            socket.send_string(dictToJson(ask_url_client_rep))
-        #TODO ERROR AQUI aunque no debe dar error nunca
+    
+    def askUrlEnd(self, ip, port, query_id):
+        context = zmq.Context()
+
+        socket = context.socket(zmq.REQ)
+        socket.connect(f'tcp://{ip}:{port}')
+
+        try:
+            ask_url_end_req = {macros.action: macros.ask_url_end_req, macros.client_query_id: query_id}
+            socket.send_string(dictToJson(ask_url_end_req))
+
+            message = socket.recv()
+            # print(message)
+
+            message_dict = jsonToDict(message)
+            if isAskUrlEndRep(message_dict):
+                # quitarlo de los jobs
+                print(f'Query {query_id} from IP: {ip}:{port} done')
+                return 0
+
+        except Exception as e:
+            print(e, f'Error askUrlEnd to: IP: {ip}, PORT: {port}')
+            socket.close()
+            return -1
 
 
     def askNotify(self, node_id, id):
@@ -638,6 +669,16 @@ class ChordNode:
         self.notify(id, keys)
         ask_notify_rep = {macros.action: macros.notify_rep}
         socket.send_string(dictToJson(ask_notify_rep))
+
+
+    def ansJoin(self, socket, message_dict):
+        ips = {self.ip: 1}
+        for f in self.finger[1:]:
+            ips[self.id_ip[f.node]] = 1
+        ips_list = [i for i in ips.keys()]
+
+        client_join_rep = {macros.action: macros.client_join_rep, macros.answer: {macros.ip: ips_list}}
+        socket.send_string(dictToJson(client_join_rep))
 
 
     def stabilizationStuff(self):
@@ -677,16 +718,6 @@ class ChordNode:
         else:
             return (lwb <= key and key <= upb + (2**self.bits)) or (lwb <= key + (2**self.bits) and key <= upb)
 
-
-    def indexAtFinger(self, id):
-        for i, f in enumerate(self.finger):
-            if inRange(id, f.start, True, f.node, True):
-                return i - 1
-
-    def indexAtSuccesors(self, id):
-        for i in range(len(self.succesors) - 1):
-            if inRange(id, self.succesors[i], True, self.succesors[i + 1], False):
-                return i + 1
 
     def updateFingerOldId(self, id_old, id_new):
         for f in self.finger:

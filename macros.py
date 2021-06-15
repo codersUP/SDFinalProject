@@ -5,6 +5,12 @@ ip = 'ip'
 query = 'query'
 answer = 'answer'
 keys = 'keys'
+keys_replic = 'keys_replic'
+html = 'html'
+
+client_ip = 'client_ip'
+client_port = 'client_port'
+client_query_id = 'client_query_id'
 
 alive_req = 'alive_req'
 alive_rep = 'alive_rep'
@@ -35,6 +41,15 @@ ask_url_server_rep = 'ask_url_server_rep'
 
 notify_req = 'notify_req'
 notify_rep = 'notify_rep'
+
+client_join_req = 'client_join_req'
+client_join_rep = 'client_join_rep'
+
+send_html_req = 'send_html_req'
+send_html_rep = 'send_html_rep'
+
+ask_url_end_req = 'ask_url_end_req'
+ask_url_end_rep = 'ask_url_end_rep'
 
 TIME_LIMIT = 5000 # ms
 TIME_FIXFINGERS = 1 # s
