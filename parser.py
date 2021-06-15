@@ -77,8 +77,23 @@ def isNotifyReq(message_dict):
 def isNotifyRep(message_dict):
     return message_dict[macros.action] == macros.notify_rep
 
+
 def isClientJoinReq(message_dict):
     return message_dict[macros.action] == macros.client_join_req
 
 def isClientJoinRep(message_dict):
     return message_dict[macros.action] == macros.client_join_rep
+
+
+def isSendHtmlReq(message_dict):
+    return message_dict[macros.action] == macros.send_html_req
+
+def isSendHtmlRep(message_dict):
+    return message_dict[macros.action] == macros.send_html_rep
+
+
+def isAskUrlEndReq(message_dict):
+    return message_dict[macros.action] == macros.ask_url_end_req
+
+def isAskUrlEndRep(message_dict):
+    return message_dict[macros.action] == macros.ask_url_end_rep

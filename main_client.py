@@ -24,10 +24,12 @@ def main():
         print('Error conecting')
         return
 
+    cn.run()
+
     while True:
         url = input()
 
-        print(cn.askKeyPosition(url))
+        print(cn.askUrl(url))
 
 if __name__ == '__main__':
     main()

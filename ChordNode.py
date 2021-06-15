@@ -33,6 +33,8 @@ class ChordNode:
         self.keys = {}
         self.keys_replic = {}
 
+        self.works = {}
+
     def getSuccesor(self):
         return self.finger[1].node
 
@@ -593,19 +595,41 @@ class ChordNode:
 
     def ansUrlClient(self, socket, message_dict):
         url = message_dict[macros.query]['url']
+        client_ip = message_dict[macros.client_ip]
+        client_port = message_dict[macros.client_port]
+        client_query_id = message_dict[macros.client_query_id]
 
-        id = self.getIdFromUrl(url)
+        print(f'Query desde {client_ip}:{client_port} URL: {url} QUERY_ID: {client_query_id}')
+        # mandar a hacer la tarea
+        self.askUrlEnd(client_ip, client_port, client_query_id)
 
-        print(f'ID DE LA QUERY {id}')
-        ans_id = self.findSuccesor(id)
-        if ans_id != -1:
-            print(f'preguntandole a {ans_id}')
-            html = self.askUrlServer(ans_id, url)
-            # TODO ERROR al pedir el html
+        ask_url_client_rep = {macros.action: macros.ask_url_client_rep}
+        socket.send_string(dictToJson(ask_url_client_rep))
 
-            ask_url_client_rep = {macros.action: macros.ask_url_client_rep, macros.answer: {'id': ans_id, 'ip': self.id_ip[ans_id], 'html': html}}
-            socket.send_string(dictToJson(ask_url_client_rep))
-        #TODO ERROR AQUI aunque no debe dar error nunca
+    
+    def askUrlEnd(self, ip, port, query_id):
+        context = zmq.Context()
+
+        socket = context.socket(zmq.REQ)
+        socket.connect(f'tcp://{ip}:{port}')
+
+        try:
+            ask_url_end_req = {macros.action: macros.ask_url_end_req, macros.client_query_id: query_id}
+            socket.send_string(dictToJson(ask_url_end_req))
+
+            message = socket.recv()
+            # print(message)
+
+            message_dict = jsonToDict(message)
+            if isAskUrlEndRep(message_dict):
+                # quitarlo de los jobs
+                print(f'Query {query_id} from IP: {ip}:{port} done')
+                return 0
+
+        except Exception as e:
+            print(e, f'Error askUrlEnd to: IP: {ip}, PORT: {port}')
+            socket.close()
+            return -1
 
 
     def askNotify(self, node_id, id):
