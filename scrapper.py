@@ -23,7 +23,7 @@ def get_html_from_url(url):
                 print(f'Failed to download {url}')
             continue
         
-        return response.content, 0
+        return response.content.decode(errors='ignore'), 0
     return '', 1
 
 

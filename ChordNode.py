@@ -40,11 +40,11 @@ class ChordNode:
         return self.finger[1].node
 
 
-    def recieveMessages(self):
+    def recieveMessages(self, port):
         context = zmq.Context()
 
         socket = context.socket(zmq.REP)
-        socket.bind("tcp://*:5555")
+        socket.bind(f"tcp://*:{port}")
 
         while True:
             message = socket.recv()
@@ -189,7 +189,7 @@ class ChordNode:
                     self.updateFingerOldId(self.successors[0], self.successors[1])
                     self.successors = self.successors[1:]
 
-            self.printFingerTable()
+            # self.printFingerTable()
             time.sleep(macros.TIME_STABILIZE)
 
     def fixFingers(self):
@@ -612,16 +612,17 @@ class ChordNode:
 
     def askUrlServer(self, node_id, key_url):
         if node_id == self.id:
+            # print(key_url)
             status = self.upd_url(key_url)
             return self.keys[key_url], status
 
         context = zmq.Context()
 
         socket = context.socket(zmq.REQ)
-        socket.connect(f'tcp://{self.id_ip[node_id]}:5555')
+        socket.connect(f'tcp://{self.id_ip[node_id]}:5556')
 
         socket.setsockopt( zmq.LINGER, 0)
-        socket.setsockopt( zmq.RCVTIMEO, macros.TIME_LIMIT )
+        socket.setsockopt( zmq.RCVTIMEO, macros.URL_TIME_LIMIT )
 
         try:
             ask_url_server_req = {
@@ -632,12 +633,12 @@ class ChordNode:
             socket.send_string(dictToJson(ask_url_server_req))
 
             message = socket.recv()
-            print(message)
+            # print(message)
 
             message_dict = jsonToDict(message)
             if isAskUrlServerRep(message_dict):
                 self.id_ip[message_dict[macros.answer][macros.id]] = message_dict[macros.answer][macros.ip]
-                return message_dict[macros.answer][macros.html], message_dict[macros.status]
+                return message_dict[macros.answer][macros.html], message_dict[macros.answer][macros.status]
 
         except Exception as e:
             print(e, f'Error askKeyPosition to: ID: {node_id}, IP: {self.id_ip[node_id]}')
@@ -674,7 +675,9 @@ class ChordNode:
         url_id = self.getIdFromUrl(key_url)
         node_id = self.findSuccessor(url_id)
 
+        # print(f'NODE IF: {node_id}')
         data, status = self.askUrlServer(node_id, key_url)
+        # print(f'DATA: {data}')
 
         ask_url_client_rep = {
             macros.action: macros.ask_url_client_rep,
@@ -749,7 +752,8 @@ class ChordNode:
 
 
     def run(self):
-        threading.Thread(target=self.recieveMessages, args=()).start()
+        threading.Thread(target=self.recieveMessages, args=('5555', )).start()
+        threading.Thread(target=self.recieveMessages, args=('5556', )).start()
         threading.Thread(target=self.stabilizationStuff, args=()).start()
 
 
@@ -789,11 +793,10 @@ class ChordNode:
             self.keys[url] = html
 
     def getIdFromUrl(self, url):
-        # id_sha = hashlib.sha256()
-        # id_sha.update(url.encode())
-        # id = int.from_bytes(id_sha.digest(), sys.byteorder)
+        id_sha = hashlib.sha256()
+        id_sha.update(url.encode())
+        id = int.from_bytes(id_sha.digest(), sys.byteorder)
 
-        id = len(url)
-        id %= 2**self.bits
+        # id %= 2**self.bits
 
         return id

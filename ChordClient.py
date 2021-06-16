@@ -6,9 +6,7 @@ from scrapper import get_url_from_html, get_html_from_url
 
 
 class ChordClient:
-    def __init__(self, ip, port, known_ip):
-        self.ip = ip
-        self.port = port
+    def __init__(self, known_ip):
         self.known_ip = known_ip
 
         self.chord_nodes_ip = [known_ip]
@@ -79,10 +77,10 @@ class ChordClient:
             context = zmq.Context()
 
             socket = context.socket(zmq.REQ)
-            socket.connect(f'tcp://{ip}:5555')
+            socket.connect(f'tcp://{ip}:5556')
 
             socket.setsockopt( zmq.LINGER, 0)
-            socket.setsockopt( zmq.RCVTIMEO, macros.TIME_LIMIT )
+            socket.setsockopt( zmq.RCVTIMEO, macros.URL_TIME_LIMIT )
 
             try:
                 ask_url_client_req = {
