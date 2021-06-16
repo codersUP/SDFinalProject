@@ -24,7 +24,7 @@ def get_html_from_url(url):
             continue
         
         return response.content, 0
-    return '', -1
+    return '', 1
 
 
 def filter_tags(tag):

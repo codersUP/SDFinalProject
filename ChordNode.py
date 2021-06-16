@@ -645,7 +645,7 @@ class ChordNode:
             return '' , -1
     
     def upd_url(self, key_url):
-        if key_url not in self.keys:
+        if key_url not in self.keys or self.keys[key_url] == '':
             data, status = get_html_from_url(key_url)
             self.keys[key_url] = data
             return status
