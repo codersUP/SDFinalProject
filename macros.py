@@ -56,6 +56,7 @@ ask_url_end_req = 'ask_url_end_req'
 ask_url_end_rep = 'ask_url_end_rep'
 
 TIME_LIMIT = 5000 # ms
+URL_TIME_LIMIT = 100000 # ms
 TIME_FIXFINGERS = 1 # s
 TIME_STABILIZE = 1 # s
 TIME_SUCCESORS_REFRESH = 1
