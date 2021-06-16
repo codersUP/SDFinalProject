@@ -6,6 +6,7 @@ from parser import *
 import random
 import hashlib
 import sys
+from scrapper import get_html_from_url
 
 class SubFinger:
     def __init__(self):
@@ -557,11 +558,8 @@ class ChordNode:
 
     def askUrlServer(self, node_id, key_url):
         if node_id == self.id:
-            if key_url in self.keys:
-                return self.keys[key_url]
-            else:
-                self.keys[key_url] = len(key_url)
-                return self.keys[key_url]
+            status = self.upd_url(key_url)
+            return self.keys[key_url], status
 
         context = zmq.Context()
 
@@ -569,7 +567,10 @@ class ChordNode:
         socket.connect(f'tcp://{self.id_ip[node_id]}:5555')
 
         try:
-            ask_url_server_req = {macros.action: macros.ask_url_server_req , macros.query: {'url': key_url}}
+            ask_url_server_req = {
+                macros.action: macros.ask_url_server_req, 
+                macros.query: {'url': key_url}
+            }
             # print(ask_key_position_req)
             socket.send_string(dictToJson(ask_url_server_req))
 
@@ -579,61 +580,51 @@ class ChordNode:
             message_dict = jsonToDict(message)
             if isAskUrlServerRep(message_dict):
                 self.id_ip[message_dict[macros.answer]['id']] = message_dict[macros.answer]['ip']
-                return message_dict[macros.answer]['html']
+                return message_dict[macros.answer]['html'], message_dict[macros.status]
 
         except Exception as e:
             print(e, f'Error askKeyPosition to: ID: {node_id}, IP: {self.id_ip[node_id]}')
             socket.close()
-            return -1
+            return '' , -1
     
+    def upd_url(self, key_url):
+        if key_url not in self.keys:
+            data, status = get_html_from_url(key_url)
+            self.keys[key_url] = data
+            return status
+        return 0
+
     def ansUrlServer(self, socket, message_dict):
         key_url = message_dict[macros.query]['url']
 
-        if key_url not in self.keys:
-            self.keys[key_url] = len(key_url)
+        status = self.upd_url(key_url)
 
-        ask_url_server_rep = {macros.action: macros.ask_url_server_rep, macros.answer: {'id': self.id, 'ip': self.ip, 'html': self.keys[key_url]}}
+        ask_url_server_rep = {  
+            macros.action: macros.ask_url_server_rep, 
+            macros.answer: {'id': self.id,
+                            'ip': self.ip, 
+                            'html': self.keys[key_url],
+                            macros.status: status},
+        }
         socket.send_string(dictToJson(ask_url_server_rep))
 
 
     def ansUrlClient(self, socket, message_dict):
-        url = message_dict[macros.query]['url']
-        depth = message_dict[macros.query][macros.depth]
-        client_ip = message_dict[macros.client_ip]
-        client_port = message_dict[macros.client_port]
-        client_query_id = message_dict[macros.client_query_id]
+        key_url = message_dict[macros.query]['url']
+        
+        url_id = self.getIdFromUrl(key_url)
+        node_id = self.findSuccesor(url_id)
 
-        print(f'Query desde {client_ip}:{client_port} URL: {url} DEPTH: {depth} QUERY_ID: {client_query_id}')
-        # mandar a hacer la tarea
-        self.askUrlEnd(client_ip, client_port, client_query_id)
+        data, status = self.askUrlServer(node_id, key_url)
 
-        ask_url_client_rep = {macros.action: macros.ask_url_client_rep}
+        ask_url_client_rep = {
+            macros.action: macros.ask_url_client_rep,
+            macros.answer:{
+                macros.html: data,
+                macros.status: status
+            }
+        }
         socket.send_string(dictToJson(ask_url_client_rep))
-
-    
-    def askUrlEnd(self, ip, port, query_id):
-        context = zmq.Context()
-
-        socket = context.socket(zmq.REQ)
-        socket.connect(f'tcp://{ip}:{port}')
-
-        try:
-            ask_url_end_req = {macros.action: macros.ask_url_end_req, macros.client_query_id: query_id}
-            socket.send_string(dictToJson(ask_url_end_req))
-
-            message = socket.recv()
-            # print(message)
-
-            message_dict = jsonToDict(message)
-            if isAskUrlEndRep(message_dict):
-                # quitarlo de los jobs
-                print(f'Query {query_id} from IP: {ip}:{port} done')
-                return 0
-
-        except Exception as e:
-            print(e, f'Error askUrlEnd to: IP: {ip}, PORT: {port}')
-            socket.close()
-            return -1
 
 
     def askNotify(self, node_id, id):

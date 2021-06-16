@@ -8,6 +8,7 @@ keys = 'keys'
 keys_replic = 'keys_replic'
 html = 'html'
 depth = 'depth'
+status = 'status'
 
 client_ip = 'client_ip'
 client_port = 'client_port'
