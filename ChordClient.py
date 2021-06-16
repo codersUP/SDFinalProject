@@ -2,6 +2,7 @@ import zmq
 from parser import isAskUrlClientRep, jsonToDict, dictToJson, isClientJoinRep, isSendHtmlReq, isAskUrlEndReq
 import macros
 import threading
+from scrapper import get_url_from_html, get_html_from_url
 
 
 class ChordClient:
@@ -11,29 +12,8 @@ class ChordClient:
         self.know_ip = know_ip
 
         self.chord_nodes_ip = [know_ip]
-        self.query_id = 1
-
-        self.jobs = {}
-
-    
-    def recieveMessages(self):
-        context = zmq.Context()
-
-        socket = context.socket(zmq.REP)
-        socket.bind(f'tcp://*:{self.port}')
-
-        while True:
-            message = socket.recv()
-            # print(message)
-
-            message_dict = jsonToDict(message)
-
-            if isSendHtmlReq(message_dict):
-                self.ansSendHTML(socket, message_dict)
-
-            if isAskUrlEndReq(message_dict):
-                self.ansAskUrlEnd(socket, message_dict)
-
+        # variable to iterate through chord_nodes_ip
+        self.pos = 0
 
 
     def join(self):
@@ -63,9 +43,39 @@ class ChordClient:
             socket.close()
             return -1
 
+    # bfs-like algorithm
+    def askUrl(self, key_url, depth=0):
+        response = {}
 
-    def askUrl(self, key_url, depth=5):
-        for ip in self.chord_nodes_ip:
+        # queue of urls to request
+        q = [{macros.url : key_url, macros.depth : depth}]
+        # set of visited url to avoid graph cycles
+        visited = { key_url }
+
+        while len(q) > 0:
+            current_req = q[0]
+            q = q[1:]
+
+            cur_url = current_req[macros.url]
+            cur_depth = current_req[macros.depth]
+            data, status = self.ask_html_from_url(cur_url)
+            response[cur_url] = data
+
+            if cur_depth > 0:
+                children_url = get_url_from_html(data, cur_url)
+                for child_url in children_url:
+                    if child_url not in visited:
+                        visited.add(child_url)
+                        new_req = {macros.url : child_url, macros.depth : cur_depth - 1}
+                        q.append(new_req)
+
+        return response
+
+    def ask_html_from_url(self, key_url):
+        while True:
+            ip = self.chord_nodes_ip[self.pos]
+            self.increase_pos()
+            
             context = zmq.Context()
 
             socket = context.socket(zmq.REQ)
@@ -75,7 +85,10 @@ class ChordClient:
             socket.setsockopt( zmq.RCVTIMEO, macros.TIME_LIMIT )
 
             try:
-                ask_url_client_req = {macros.action: macros.ask_url_client_req, macros.query: {'url': key_url, 'depth': depth}, macros.client_ip: self.ip, macros.client_port: self.port, macros.client_query_id: self.query_id}
+                ask_url_client_req = {
+                    macros.action: macros.ask_url_client_req,
+                    macros.query: {'url': key_url}
+                }
                 socket.send_string(dictToJson(ask_url_client_req))
 
                 message = socket.recv()
@@ -83,41 +96,20 @@ class ChordClient:
 
                 message_dict = jsonToDict(message)
                 if isAskUrlClientRep(message_dict):
-                    self.jobs[self.query_id] = True
-                    return 0
+                    return message_dict[macros.answer][macros.html], message_dict[macros.answer][macros.status]
             
             except Exception as e:
                 print(e, f'Error asking for url to IP: {ip}')
-                self.chord_nodes_ip = self.chord_nodes_ip[1:]
-                self.chord_nodes_ip.append(ip)
-                socket.close()
+            
+            socket.close()
         
-        return -1
+        return '', -1
 
+    
+    def increase_pos(self):
+        self.pos += 1
+        if self.pos >= len(self.chord_nodes_ip):
+            self.pos = 0
 
-    def ansSendHTML(self, socket, message_dict):
-        html = message_dict[macros.html]
-        query_id = message_dict[macros.client_query_id]
-
-        # guardar el html
-        print(f'QUERY_ID: {query_id} \n HTML: {html}')
-
-        send_html_rep = {macros.action: macros.send_html_rep}
-        socket.send_string(dictToJson(send_html_rep))
-
-
-    def ansAskUrlEnd(self, socket, message_dict):
-        query_id = message_dict[macros.client_query_id]
-
-        print(f'QUERY_ID: {query_id} END')
-        self.jobs.pop(self.query_id)
-        self.query_id += 1
-
-        ask_url_end_rep = {macros.action: macros.ask_url_end_rep}
-        socket.send_string(dictToJson(ask_url_end_rep))
-
-
-    def run(self):
-        threading.Thread(target=self.recieveMessages, args=()).start()
 
             

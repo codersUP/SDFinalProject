@@ -3,6 +3,7 @@ import argparse
 import ChordClient
 import os
 import sys
+from pprint import pprint
 
 def arg_parser():
     parser = argparse.ArgumentParser(description='Run a chord client')
@@ -24,12 +25,13 @@ def main():
         print('Error conecting')
         return
 
-    cn.run()
+    # cn.run()
 
     while True:
-        url = input()
+        url = input('Enter url: ')
+        d = int(input('Enter depth: '))
 
-        print(cn.askUrl(url))
+        pprint(cn.askUrl(url, depth=d))
 
 if __name__ == '__main__':
     main()
