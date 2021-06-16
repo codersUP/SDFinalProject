@@ -34,7 +34,7 @@ class ChordClient:
 
             message_dict = jsonToDict(message)
             if isClientJoinRep(message_dict):
-                self.chord_nodes_ip = message_dict[macros.answer]['ip']
+                self.chord_nodes_ip = message_dict[macros.answer][macros.ip]
                 # print(self.chord_nodes_ip)
                 return 0
 
@@ -72,7 +72,7 @@ class ChordClient:
         return response
 
     def ask_html_from_url(self, key_url):
-        while True:
+        for _ in range(3 * len(self.chord_nodes_ip)):
             ip = self.chord_nodes_ip[self.pos]
             self.increase_pos()
             
@@ -100,8 +100,7 @@ class ChordClient:
             
             except Exception as e:
                 print(e, f'Error asking for url to IP: {ip}')
-            
-            socket.close()
+                socket.close()
         
         return '', -1
 
