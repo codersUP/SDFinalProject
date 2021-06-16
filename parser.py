@@ -15,32 +15,32 @@ def isAliveRep(message_dict):
     return message_dict[macros.action] == macros.alive_rep
 
 
-def isAskSuccesorReq(message_dict):
-    return message_dict[macros.action] == macros.ask_succesor_req
+def isAskSuccessorReq(message_dict):
+    return message_dict[macros.action] == macros.ask_successor_req
 
-def isAskSuccesorRep(message_dict):
-    return message_dict[macros.action] == macros.ask_succesor_rep
-
-
-def isFindSuccesorReq(message_dict):
-    return message_dict[macros.action] == macros.find_succesor_req
-
-def isFindSuccesorRep(message_dict):
-    return message_dict[macros.action] == macros.find_succesor_rep
+def isAskSuccessorRep(message_dict):
+    return message_dict[macros.action] == macros.ask_successor_rep
 
 
-def isAskPredecesorReq(message_dict):
-    return message_dict[macros.action] == macros.ask_predecesor_req
+def isFindSuccessorReq(message_dict):
+    return message_dict[macros.action] == macros.find_successor_req
 
-def isAskPredecesorRep(message_dict):
-    return message_dict[macros.action] == macros.ask_predecesor_rep
+def isFindSuccessorRep(message_dict):
+    return message_dict[macros.action] == macros.find_successor_rep
 
 
-def isSetPredecesorReq(message_dict):
-    return message_dict[macros.action] == macros.set_predecesor_req
+def isAskPredecessorReq(message_dict):
+    return message_dict[macros.action] == macros.ask_predecessor_req
 
-def isSetPredecesorRep(message_dict):
-    return message_dict[macros.action] == macros.set_predecesor_rep
+def isAskPredecessorRep(message_dict):
+    return message_dict[macros.action] == macros.ask_predecessor_rep
+
+
+def isSetPredecessorReq(message_dict):
+    return message_dict[macros.action] == macros.set_predecessor_req
+
+def isSetPredecessorRep(message_dict):
+    return message_dict[macros.action] == macros.set_predecessor_rep
 
 
 def isUpdateFingerTableReq(message_dict):

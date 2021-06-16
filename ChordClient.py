@@ -6,12 +6,12 @@ from scrapper import get_url_from_html, get_html_from_url
 
 
 class ChordClient:
-    def __init__(self, ip, port, know_ip):
+    def __init__(self, ip, port, known_ip):
         self.ip = ip
         self.port = port
-        self.know_ip = know_ip
+        self.known_ip = known_ip
 
-        self.chord_nodes_ip = [know_ip]
+        self.chord_nodes_ip = [known_ip]
         # variable to iterate through chord_nodes_ip
         self.pos = 0
 
@@ -20,7 +20,7 @@ class ChordClient:
         context = zmq.Context()
 
         socket = context.socket(zmq.REQ)
-        socket.connect(f'tcp://{self.know_ip}:5555')
+        socket.connect(f'tcp://{self.known_ip}:5555')
 
         socket.setsockopt( zmq.LINGER, 0)
         socket.setsockopt( zmq.RCVTIMEO, macros.TIME_LIMIT )
@@ -39,7 +39,7 @@ class ChordClient:
                 return 0
 
         except Exception as e:
-            print(e, f'Error join to IP: {self.know_ip}')
+            print(e, f'Error join to IP: {self.known_ip}')
             socket.close()
             return -1
 

@@ -15,28 +15,28 @@ class SubFinger:
 
 
 class ChordNode:
-    def __init__(self, ip, id, bits, know_ip):
+    def __init__(self, ip, id, bits, known_ip):
         self.id = int(id)
         self.ip = ip 
         self.bits = int(bits)
-        self.know_ip = know_ip
+        self.known_ip = known_ip
 
         self.finger = [SubFinger() for _ in range(self.bits + 1)]
         for i in range(1, self.bits + 1):
             self.finger[i].start = (self.id + 2**(i - 1)) % (2**self.bits)
 
-        self.predecesor = self.id
+        self.predecessor = self.id
 
         self.id_ip = {self.id: self.ip}
 
-        self.succesors = []
+        self.successors = []
 
         self.keys = {}
         self.keys_replic = {}
 
         self.works = {}
 
-    def getSuccesor(self):
+    def getSuccessor(self):
         return self.finger[1].node
 
 
@@ -55,23 +55,23 @@ class ChordNode:
             if isAliveReq(message_dict):
                 self.ansAlive(socket, message_dict)
 
-            if isAskSuccesorReq(message_dict):
-                self.ansSuccesor(socket, self.getSuccesor())
+            if isAskSuccessorReq(message_dict):
+                self.ansSuccessor(socket, self.getSuccessor())
 
-            if isFindSuccesorReq(message_dict):
-                self.ansFindSuccesor(socket, message_dict)
+            if isFindSuccessorReq(message_dict):
+                self.ansFindSuccessor(socket, message_dict)
 
-            if isAskPredecesorReq(message_dict):
-                self.ansPredecesor(socket, self.predecesor)
+            if isAskPredecessorReq(message_dict):
+                self.ansPredecessor(socket, self.predecessor)
 
-            if isSetPredecesorReq(message_dict):
-                self.ansSetPredecesor(socket, message_dict)
+            if isSetPredecessorReq(message_dict):
+                self.ansSetPredecessor(socket, message_dict)
 
             if isUpdateFingerTableReq(message_dict):
                 self.ansUpdateFingerTable(socket, message_dict)
 
             if isAksClosestPrecedingFingerReq(message_dict):
-                self.ansClosesPrecedingFinger(socket, message_dict)
+                self.ansClosestPrecedingFinger(socket, message_dict)
 
             if isAskUrlServerReq(message_dict):
                 self.ansUrlServer(socket, message_dict)
@@ -88,36 +88,36 @@ class ChordNode:
             # self.printFingerTable()
 
 
-    def findSuccesor(self, id):
-        findPredecesor_id = self.findPredecesor(id)
-        if findPredecesor_id != -1:
-            n_prima = findPredecesor_id
-        # nunca findPredecesor debe retornar -1
+    def findSuccessor(self, id):
+        findPredecessor_id = self.findPredecessor(id)
+        if findPredecessor_id != -1:
+            n_prima = findPredecessor_id
+        # nunca findPredecessor debe retornar -1
         else:
             pass
 
         if n_prima == id:
             return n_prima
-        askSuccesor_id = self.askSuccesor(n_prima)
-        if askSuccesor_id != -1:
-            return askSuccesor_id
+        askSuccessor_id = self.askSuccessor(n_prima)
+        if askSuccessor_id != -1:
+            return askSuccessor_id
         # n_prima is down
         else:
             while(True):
-                askFindSuccesor_id = self.askFindSuccesor(self.succesors[0], id)
-                if askFindSuccesor_id != -1:
-                    return askFindSuccesor_id
-                # self.succesors[0] is down
+                askFindSuccessor_id = self.askFindSuccessor(self.successors[0], id)
+                if askFindSuccessor_id != -1:
+                    return askFindSuccessor_id
+                # self.successors[0] is down
                 else:
-                    self.updateFingerOldId(self.succesors[0], self.succesors[1])
-                    self.succesors = self.succesors[1:]
+                    self.updateFingerOldId(self.successors[0], self.successors[1])
+                    self.successors = self.successors[1:]
 
-    def findPredecesor(self, id):
+    def findPredecessor(self, id):
         n_prima = self.id
 
-        askSuccesor_id = self.askSuccesor(n_prima)
-        if askSuccesor_id != -1:
-            n_prima_s = askSuccesor_id
+        askSuccessor_id = self.askSuccessor(n_prima)
+        if askSuccessor_id != -1:
+            n_prima_s = askSuccessor_id
         # n_prima is down aunque no debe haber error nunca aquí
         else:
             pass
@@ -133,9 +133,9 @@ class ChordNode:
                 break
 
 
-            askSuccesor_id2 = self.askSuccesor(n_prima)
-            if askSuccesor_id2 != -1:
-                n_prima_s = askSuccesor_id2
+            askSuccessor_id2 = self.askSuccessor(n_prima)
+            if askSuccessor_id2 != -1:
+                n_prima_s = askSuccessor_id2
             # n_prima is down
             else:
                 n_prima = n_prima_temp
@@ -153,41 +153,41 @@ class ChordNode:
 
     def notify(self, id, keys):
         # print(f'NOTIFY {id}')
-        if id != self.predecesor:
-            askAlive_id = self.askAlive(self.id_ip[self.predecesor])
+        if id != self.predecessor:
+            askAlive_id = self.askAlive(self.id_ip[self.predecessor])
         else:
             askAlive_id = 0
 
         if askAlive_id == -1:
             self.updateReplicKeys()
 
-        if askAlive_id == -1 or self.inRange(id, self.predecesor, False, self.id, False) or id == self.predecesor:
-            self.predecesor = id
+        if askAlive_id == -1 or self.inRange(id, self.predecessor, False, self.id, False) or id == self.predecessor:
+            self.predecessor = id
             self.keys_replic = keys
 
     def stabilize(self):
         while(True):
             while(True):
-                askPredecesor_id = self.askPredecesor(self.getSuccesor())
-                if askPredecesor_id != -1:
-                    x = askPredecesor_id
+                askPredecessor_id = self.askPredecessor(self.getSuccessor())
+                if askPredecessor_id != -1:
+                    x = askPredecessor_id
                     break
-                # self.getSuccesor() is down
+                # self.getSuccessor() is down
                 else:
-                    self.updateFingerOldId(self.succesors[0], self.succesors[1])
-                    self.succesors = self.succesors[1:]
+                    self.updateFingerOldId(self.successors[0], self.successors[1])
+                    self.successors = self.successors[1:]
 
-            if self.inRange(x, self.id, False, self.getSuccesor(), False) and x != self.id:
+            if self.inRange(x, self.id, False, self.getSuccessor(), False) and x != self.id:
                 self.finger[1].node = x
 
             while(True):
-                askNotify_id = self.askNotify(self.getSuccesor(), self.id)
-                # self.getSuccesor() is down
+                askNotify_id = self.askNotify(self.getSuccessor(), self.id)
+                # self.getSuccessor() is down
                 if askNotify_id != -1:
                     break
                 else:
-                    self.updateFingerOldId(self.succesors[0], self.succesors[1])
-                    self.succesors = self.succesors[1:]
+                    self.updateFingerOldId(self.successors[0], self.successors[1])
+                    self.successors = self.successors[1:]
 
             self.printFingerTable()
             time.sleep(macros.TIME_STABILIZE)
@@ -195,34 +195,34 @@ class ChordNode:
     def fixFingers(self):
         while(True):
             i = random.randint(1, self.bits)
-            findSuccesor_id = self.findSuccesor(self.finger[i].start)
-            if findSuccesor_id != -1:
-                self.finger[i].node = findSuccesor_id
+            findSuccessor_id = self.findSuccessor(self.finger[i].start)
+            if findSuccessor_id != -1:
+                self.finger[i].node = findSuccessor_id
             #TODO fixFingers Error aunque nunca debe dar error
 
             time.sleep(macros.TIME_FIXFINGERS)
 
-    def updateSuccesors(self):
+    def updateSuccessors(self):
         while(True):
-            len_s = len(self.succesors)
-            while len_s < macros.SUCCESORS_NUMBER:
-                askSuccesor_id = self.askSuccesor(self.succesors[-1])
-                if askSuccesor_id != -1:
-                    self.succesors.insert(len_s, askSuccesor_id)
-                # succesors[-1] is down
+            len_s = len(self.successors)
+            while len_s < macros.SUCCESSORS_NUMBER:
+                askSuccessor_id = self.askSuccessor(self.successors[-1])
+                if askSuccessor_id != -1:
+                    self.successors.insert(len_s, askSuccessor_id)
+                # successors[-1] is down
                 else:
-                    self.updateFingerOldId(self.succesors[-1], self.succesors[-2])
-                    self.succesors = self.succesors[:-1]
-                len_s = len(self.succesors)
+                    self.updateFingerOldId(self.successors[-1], self.successors[-2])
+                    self.successors = self.successors[:-1]
+                len_s = len(self.successors)
 
-            # print(f'Succesors {self.succesors}')
+            # print(f'Successors {self.successors}')
             
-            time.sleep(macros.TIME_SUCCESORS_REFRESH) 
+            time.sleep(macros.TIME_SUCCESSORS_REFRESH) 
 
 
     def join(self):
-        if self.know_ip != self.ip:
-            id = self.askAlive(self.know_ip)
+        if self.known_ip != self.ip:
+            id = self.askAlive(self.known_ip)
 
             if id != -1:
                 self.initFingerTable(id)
@@ -233,9 +233,9 @@ class ChordNode:
 
         for i in range(1, self.bits + 1):
             self.finger[i].node = self.id
-            self.finger[i].node_succesor = self.id
-        self.predecesor = self.id
-        self.succesors.insert(0, self.id)
+            self.finger[i].node_successor = self.id
+        self.predecessor = self.id
+        self.successors.insert(0, self.id)
 
         return
 
@@ -243,30 +243,30 @@ class ChordNode:
     def initFingerTable(self, node_id):
         # print('init finger table')
 
-        find_succesor_id = self.askFindSuccesor(node_id, self.finger[1].start)
-        if find_succesor_id != -1:
-            self.finger[1].node = find_succesor_id
-            self.succesors.insert(0, find_succesor_id)
+        find_successor_id = self.askFindSuccessor(node_id, self.finger[1].start)
+        if find_successor_id != -1:
+            self.finger[1].node = find_successor_id
+            self.successors.insert(0, find_successor_id)
         else:
             raise Exception('ERROR joining')
 
-        ask_predecesor_id = self.askPredecesor(self.getSuccesor())
-        if ask_predecesor_id != -1:
-            self.predecesor = ask_predecesor_id
+        ask_predecessor_id = self.askPredecessor(self.getSuccessor())
+        if ask_predecessor_id != -1:
+            self.predecessor = ask_predecessor_id
         else:
             raise Exception('ERROR joining')
 
-        ask_setPredecesor_ret = self.askSetPredecesor(self.getSuccesor(), self.id)
-        if ask_setPredecesor_ret == -1:
+        ask_setPredecessor_ret = self.askSetPredecessor(self.getSuccessor(), self.id)
+        if ask_setPredecessor_ret == -1:
             raise Exception('ERROR joining')
 
         for i in range(1, self.bits):
             if self.inRange(self.finger[i + 1].start, self.id, True, self.finger[i].node, False):
                 self.finger[i + 1].node = self.finger[i].node
             else:
-                ask_findSuccesor_id = self.askFindSuccesor(node_id, self.finger[i + 1].start)
-                if ask_findSuccesor_id != -1:
-                    self.finger[i + 1].node = ask_findSuccesor_id
+                ask_findSuccessor_id = self.askFindSuccessor(node_id, self.finger[i + 1].start)
+                if ask_findSuccessor_id != -1:
+                    self.finger[i + 1].node = ask_findSuccessor_id
                 else:
                     raise Exception('ERROR joining')
 
@@ -274,9 +274,9 @@ class ChordNode:
     def update_others(self):
         # print('init update_others')
         for i in range(1, self.bits + 1):
-            find_predecesor_id = self.findPredecesor((self.id - 2**(i - 1)) % (2**self.bits))
-            if find_predecesor_id != -1:
-                p = find_predecesor_id
+            find_predecessor_id = self.findPredecessor((self.id - 2**(i - 1)) % (2**self.bits))
+            if find_predecessor_id != -1:
+                p = find_predecessor_id
             else:
                 raise Exception('ERROR joining')
 
@@ -291,11 +291,11 @@ class ChordNode:
     def updateFingerTable(self, s, i):
         if self.inRange(s, self.id, True, self.finger[i].node, False):
             self.finger[i].node = s
-            p = self.predecesor
+            p = self.predecessor
 
             if(p != s):
                 askUpdateFingerTable_id = self.askUpdateFingerTable(p, s, i)
-                # predecesor is down
+                # predecessor is down
                 if askUpdateFingerTable_id == -1:
                     # TODO
                     pass
@@ -341,9 +341,9 @@ class ChordNode:
         socket.send_string(dictToJson(alive_rep_dict))
 
 
-    def askSuccesor(self, node_id):
+    def askSuccessor(self, node_id):
         if node_id == self.id:
-            return self.getSuccesor()
+            return self.getSuccessor()
 
         context = zmq.Context()
         
@@ -354,35 +354,35 @@ class ChordNode:
         socket.setsockopt( zmq.RCVTIMEO, macros.TIME_LIMIT )
 
         try:
-            ask_succesor_req = {macros.action: macros.ask_succesor_req}
-            # print(ask_succesor_req, node_id)
-            socket.send_string(dictToJson(ask_succesor_req))
+            ask_successor_req = {macros.action: macros.ask_successor_req}
+            # print(ask_successor_req, node_id)
+            socket.send_string(dictToJson(ask_successor_req))
 
             message = socket.recv()
             # print(message)
 
             message_dict = jsonToDict(message)
-            if isAskSuccesorRep(message_dict):
+            if isAskSuccessorRep(message_dict):
                 self.id_ip[message_dict[macros.answer][macros.id]] = message_dict[macros.answer][macros.ip]
                 return message_dict[macros.answer][macros.id]
             
         except Exception as e:
-            print(e, f'Error askSuccesor to: ID: {node_id}, IP: {self.id_ip[node_id]}')
+            print(e, f'Error askSuccessor to: ID: {node_id}, IP: {self.id_ip[node_id]}')
             socket.close()
             return -1
 
-    def ansSuccesor(self, socket, id):
-        ask_succesor_rep = {
-            macros.action: macros.ask_succesor_rep, 
+    def ansSuccessor(self, socket, id):
+        ask_successor_rep = {
+            macros.action: macros.ask_successor_rep, 
             macros.answer: {
                 macros.id: id,
                 macros.ip: self.id_ip[id]
             }
         }
-        socket.send_string(dictToJson(ask_succesor_rep))
+        socket.send_string(dictToJson(ask_successor_rep))
 
 
-    def askFindSuccesor(self, node_id, succesor_id):
+    def askFindSuccessor(self, node_id, successor_id):
         context = zmq.Context()
 
         socket = context.socket(zmq.REQ)
@@ -392,42 +392,42 @@ class ChordNode:
         socket.setsockopt( zmq.RCVTIMEO, macros.TIME_LIMIT )
 
         try:
-            find_succesor_req = {
-                macros.action: macros.find_succesor_req, 
-                macros.query: {macros.id: succesor_id}
+            find_successor_req = {
+                macros.action: macros.find_successor_req, 
+                macros.query: {macros.id: successor_id}
             }
-            # print(find_succesor_req)
-            socket.send_string(dictToJson(find_succesor_req))
+            # print(find_successor_req)
+            socket.send_string(dictToJson(find_successor_req))
 
             message = socket.recv()
             # print(message)
 
             message_dict = jsonToDict(message)
-            if isFindSuccesorRep(message_dict):
+            if isFindSuccessorRep(message_dict):
                 self.id_ip[message_dict[macros.answer][macros.id]] = message_dict[macros.answer][macros.ip]
                 return message_dict[macros.answer][macros.id]
         
         except Exception as e:
-            print(e, f'Error askFindSuccesor to: ID: {node_id}, IP: {self.id_ip[node_id]}')
+            print(e, f'Error askFindSuccessor to: ID: {node_id}, IP: {self.id_ip[node_id]}')
             socket.close()
             return -1
 
-    def ansFindSuccesor(self, socket, message_dict):
-        id = self.findSuccesor(message_dict[macros.query][macros.id])
-        find_succesor_rep = {
-            macros.action: macros.find_succesor_rep, 
+    def ansFindSuccessor(self, socket, message_dict):
+        id = self.findSuccessor(message_dict[macros.query][macros.id])
+        find_successor_rep = {
+            macros.action: macros.find_successor_rep, 
             macros.answer: {
                 macros.id: id, 
                 macros.ip: self.id_ip[id]
             }
         }
-        # print(find_succesor_rep)
-        socket.send_string(dictToJson(find_succesor_rep))
+        # print(find_successor_rep)
+        socket.send_string(dictToJson(find_successor_rep))
 
 
-    def askPredecesor(self, node_id):
+    def askPredecessor(self, node_id):
         if node_id == self.id:
-            return self.predecesor
+            return self.predecessor
 
         context = zmq.Context()
 
@@ -438,34 +438,34 @@ class ChordNode:
         socket.setsockopt( zmq.RCVTIMEO, macros.TIME_LIMIT )
 
         try:
-            ask_predecesor_req = {macros.action: macros.ask_predecesor_req}
-            socket.send_string(dictToJson(ask_predecesor_req))
+            ask_predecessor_req = {macros.action: macros.ask_predecessor_req}
+            socket.send_string(dictToJson(ask_predecessor_req))
 
             message = socket.recv()
             # print(message)
 
             message_dict = jsonToDict(message)
-            if isAskPredecesorRep(message_dict):
+            if isAskPredecessorRep(message_dict):
                 self.id_ip[message_dict[macros.answer][macros.id]] = message_dict[macros.answer][macros.ip]
                 return message_dict[macros.answer][macros.id]
 
         except Exception as e:
-            print(e, f'Error askPredecesor to: ID: {node_id}, IP: {self.id_ip[node_id]}')
+            print(e, f'Error askPredecessor to: ID: {node_id}, IP: {self.id_ip[node_id]}')
             socket.close()
             return -1
 
-    def ansPredecesor(self, socket, id):
-        ask_predecesor_rep = {
-            macros.action: macros.ask_predecesor_rep, 
+    def ansPredecessor(self, socket, id):
+        ask_predecessor_rep = {
+            macros.action: macros.ask_predecessor_rep, 
             macros.answer: {
                 macros.id: id, 
                 macros.ip: self.id_ip[id]
             }
         }
-        socket.send_string(dictToJson(ask_predecesor_rep))
+        socket.send_string(dictToJson(ask_predecessor_rep))
 
 
-    def askSetPredecesor(self, node_id, predecesor_id):
+    def askSetPredecessor(self, node_id, predecessor_id):
         context = zmq.Context()
 
         socket = context.socket(zmq.REQ)
@@ -475,50 +475,50 @@ class ChordNode:
         socket.setsockopt( zmq.RCVTIMEO, macros.TIME_LIMIT )
 
         try:
-            set_predecesor_req = {
-                macros.action: macros.set_predecesor_req, 
+            set_predecessor_req = {
+                macros.action: macros.set_predecessor_req, 
                 macros.query: {
-                    macros.id: predecesor_id, 
-                    macros.ip: self.id_ip[predecesor_id]
+                    macros.id: predecessor_id, 
+                    macros.ip: self.id_ip[predecessor_id]
                 }
             }
-            socket.send_string(dictToJson(set_predecesor_req))
+            socket.send_string(dictToJson(set_predecessor_req))
 
             message = socket.recv()
             # print(message)
 
             message_dict = jsonToDict(message)
-            if isSetPredecesorRep(message_dict):
+            if isSetPredecessorRep(message_dict):
                 self.keys = message_dict[macros.keys]
                 self.keys_replic = message_dict[macros.keys_replic]
                 return 0
             
         except Exception as e:
-            print(e, f'Error askSetPredecesor to: ID: {node_id}, IP: {self.id_ip[node_id]}')
+            print(e, f'Error askSetPredecessor to: ID: {node_id}, IP: {self.id_ip[node_id]}')
             socket.close()
             return -1
 
-    def ansSetPredecesor(self, socket, message_dict):
+    def ansSetPredecessor(self, socket, message_dict):
         id = message_dict[macros.query][macros.id]
 
         keys_replic_ret = self.keys_replic.copy()
         keys_ret = {}
         for url, html in self.keys.items():
             url_id = self.getIdFromUrl(url)
-            if self.predecesor < url_id and url_id <= id:
+            if self.predecessor < url_id and url_id <= id:
                 keys_ret[url] = html
 
         self.keys_replic = keys_ret
 
-        self.predecesor = id
+        self.predecessor = id
         self.id_ip[id] = message_dict[macros.query][macros.ip]
 
-        set_predecesor_rep = {
-            macros.action: macros.set_predecesor_rep, 
+        set_predecessor_rep = {
+            macros.action: macros.set_predecessor_rep, 
             macros.keys: keys_ret, 
             macros.keys_replic: keys_replic_ret
         }
-        socket.send_string(dictToJson(set_predecesor_rep))
+        socket.send_string(dictToJson(set_predecessor_rep))
 
 
     def askUpdateFingerTable(self, node_id, s, i):
@@ -597,7 +597,7 @@ class ChordNode:
             socket.close()
             return -1
 
-    def ansClosesPrecedingFinger(self, socket, message_dict):
+    def ansClosestPrecedingFinger(self, socket, message_dict):
         id = self.closestPrecedingFinger(message_dict[macros.query][macros.id])
         ip = self.id_ip[id]
         ask_closest_preceding_finger_rep = {
@@ -672,7 +672,7 @@ class ChordNode:
         key_url = message_dict[macros.query][macros.url]
         
         url_id = self.getIdFromUrl(key_url)
-        node_id = self.findSuccesor(url_id)
+        node_id = self.findSuccessor(url_id)
 
         data, status = self.askUrlServer(node_id, key_url)
 
@@ -742,7 +742,7 @@ class ChordNode:
 
 
     def stabilizationStuff(self):
-        threading.Thread(target=self.updateSuccesors, args=()).start()
+        threading.Thread(target=self.updateSuccessors, args=()).start()
         time.sleep(macros.TIME_INIT_STABLIZE_STUFF)
         threading.Thread(target=self.stabilize, args=()).start()
         threading.Thread(target=self.fixFingers, args=()).start()
@@ -755,7 +755,7 @@ class ChordNode:
 
     def printFingerTable(self):
         print('Finger table:')
-        print(f'Predecesor: {self.predecesor}')
+        print(f'Predecessor: {self.predecessor}')
         for i in range(1, self.bits + 1):
             print(f'{self.finger[i].start} {self.finger[i].node}')
         print(self.keys)
