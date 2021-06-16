@@ -363,8 +363,8 @@ class ChordNode:
 
             message_dict = jsonToDict(message)
             if isAskSuccesorRep(message_dict):
-                self.id_ip[message_dict[macros.answer]['id']] = message_dict[macros.answer]['ip']
-                return message_dict[macros.answer]['id']
+                self.id_ip[message_dict[macros.answer][macros.id]] = message_dict[macros.answer][macros.ip]
+                return message_dict[macros.answer][macros.id]
             
         except Exception as e:
             print(e, f'Error askSuccesor to: ID: {node_id}, IP: {self.id_ip[node_id]}')
@@ -404,8 +404,8 @@ class ChordNode:
 
             message_dict = jsonToDict(message)
             if isFindSuccesorRep(message_dict):
-                self.id_ip[message_dict[macros.answer]['id']] = message_dict[macros.answer]['ip']
-                return message_dict[macros.answer]['id']
+                self.id_ip[message_dict[macros.answer][macros.id]] = message_dict[macros.answer][macros.ip]
+                return message_dict[macros.answer][macros.id]
         
         except Exception as e:
             print(e, f'Error askFindSuccesor to: ID: {node_id}, IP: {self.id_ip[node_id]}')
@@ -413,7 +413,7 @@ class ChordNode:
             return -1
 
     def ansFindSuccesor(self, socket, message_dict):
-        id = self.findSuccesor(message_dict[macros.query]['id'])
+        id = self.findSuccesor(message_dict[macros.query][macros.id])
         find_succesor_rep = {
             macros.action: macros.find_succesor_rep, 
             macros.answer: {
@@ -446,8 +446,8 @@ class ChordNode:
 
             message_dict = jsonToDict(message)
             if isAskPredecesorRep(message_dict):
-                self.id_ip[message_dict[macros.answer]['id']] = message_dict[macros.answer]['ip']
-                return message_dict[macros.answer]['id']
+                self.id_ip[message_dict[macros.answer][macros.id]] = message_dict[macros.answer][macros.ip]
+                return message_dict[macros.answer][macros.id]
 
         except Exception as e:
             print(e, f'Error askPredecesor to: ID: {node_id}, IP: {self.id_ip[node_id]}')
@@ -499,7 +499,7 @@ class ChordNode:
             return -1
 
     def ansSetPredecesor(self, socket, message_dict):
-        id = message_dict[macros.query]['id']
+        id = message_dict[macros.query][macros.id]
 
         keys_replic_ret = self.keys_replic.copy()
         keys_ret = {}
@@ -511,7 +511,7 @@ class ChordNode:
         self.keys_replic = keys_ret
 
         self.predecesor = id
-        self.id_ip[id] = message_dict[macros.query]['ip']
+        self.id_ip[id] = message_dict[macros.query][macros.ip]
 
         set_predecesor_rep = {
             macros.action: macros.set_predecesor_rep, 
@@ -589,8 +589,8 @@ class ChordNode:
 
             message_dict = jsonToDict(message)
             if isAksClosestPrecedingFingerRep(message_dict):
-                self.id_ip[message_dict[macros.answer]['id']] = message_dict[macros.answer]['ip']
-                return message_dict[macros.answer]['id']
+                self.id_ip[message_dict[macros.answer][macros.id]] = message_dict[macros.answer][macros.ip]
+                return message_dict[macros.answer][macros.id]
 
         except Exception as e:
             print(e, f'Error askClosestPrecedingFinger to: ID: {node_id}, IP: {self.id_ip[node_id]}')
@@ -598,7 +598,7 @@ class ChordNode:
             return -1
 
     def ansClosesPrecedingFinger(self, socket, message_dict):
-        id = self.closestPrecedingFinger(message_dict[macros.query]['id'])
+        id = self.closestPrecedingFinger(message_dict[macros.query][macros.id])
         ip = self.id_ip[id]
         ask_closest_preceding_finger_rep = {
             macros.action: macros.ask_closest_preceding_finger_rep, 
@@ -636,8 +636,8 @@ class ChordNode:
 
             message_dict = jsonToDict(message)
             if isAskUrlServerRep(message_dict):
-                self.id_ip[message_dict[macros.answer]['id']] = message_dict[macros.answer]['ip']
-                return message_dict[macros.answer]['html'], message_dict[macros.status]
+                self.id_ip[message_dict[macros.answer][macros.id]] = message_dict[macros.answer][macros.ip]
+                return message_dict[macros.answer][macros.html], message_dict[macros.status]
 
         except Exception as e:
             print(e, f'Error askKeyPosition to: ID: {node_id}, IP: {self.id_ip[node_id]}')
@@ -652,7 +652,7 @@ class ChordNode:
         return 0
 
     def ansUrlServer(self, socket, message_dict):
-        key_url = message_dict[macros.query]['url']
+        key_url = message_dict[macros.query][macros.url]
 
         status = self.upd_url(key_url)
 
@@ -669,7 +669,7 @@ class ChordNode:
 
 
     def ansUrlClient(self, socket, message_dict):
-        key_url = message_dict[macros.query]['url']
+        key_url = message_dict[macros.query][macros.url]
         
         url_id = self.getIdFromUrl(key_url)
         node_id = self.findSuccesor(url_id)
@@ -720,9 +720,9 @@ class ChordNode:
             return -1
 
     def ansNotify(self, socket, message_dict):
-        id = message_dict[macros.query]['id']
+        id = message_dict[macros.query][macros.id]
         keys = message_dict[macros.keys]
-        self.id_ip[id] = message_dict[macros.query]['ip']
+        self.id_ip[id] = message_dict[macros.query][macros.ip]
         self.notify(id, keys)
         ask_notify_rep = {macros.action: macros.notify_rep}
         socket.send_string(dictToJson(ask_notify_rep))

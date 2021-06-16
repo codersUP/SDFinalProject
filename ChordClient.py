@@ -1,5 +1,5 @@
 import zmq
-from parser import isAskUrlClientRep, jsonToDict, dictToJson, isClientJoinRep, isSendHtmlReq, isAskUrlEndReq
+from parser import isAskUrlClientRep, jsonToDict, dictToJson, isClientJoinRep
 import macros
 import threading
 from scrapper import get_url_from_html, get_html_from_url
