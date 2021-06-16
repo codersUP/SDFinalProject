@@ -27,7 +27,11 @@ def main():
         url = input('Enter url: ')
         d = int(input('Enter depth: '))
 
-        pprint(cn.askUrl(url, depth=d))
+        htmls = cn.askUrl(url, depth=d)
+        for u, h in htmls.items():
+            f = open(u.replace('/', ' '), "x")
+            f.write(h)
+            f.close()
 
 if __name__ == '__main__':
     main()

@@ -612,6 +612,7 @@ class ChordNode:
 
     def askUrlServer(self, node_id, key_url):
         if node_id == self.id:
+            # print(key_url)
             status = self.upd_url(key_url)
             return self.keys[key_url], status
 
@@ -653,6 +654,7 @@ class ChordNode:
 
     def ansUrlServer(self, socket, message_dict):
         key_url = message_dict[macros.query]['url']
+        # print(key_url)
 
         status = self.upd_url(key_url)
 
@@ -670,7 +672,7 @@ class ChordNode:
 
     def ansUrlClient(self, socket, message_dict):
         key_url = message_dict[macros.query]['url']
-        print(key_url)
+        # print(key_url)
         
         url_id = self.getIdFromUrl(key_url)
         # print(f'URL ID: {url_id}')
