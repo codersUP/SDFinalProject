@@ -338,9 +338,8 @@ class ChordNode:
             return self.getSuccesor()
 
         context = zmq.Context()
-
+        
         socket = context.socket(zmq.REQ)
-
         socket.connect(f'tcp://{self.id_ip[node_id]}:5555')
 
         socket.setsockopt( zmq.LINGER, 0)
@@ -565,6 +564,9 @@ class ChordNode:
 
         socket = context.socket(zmq.REQ)
         socket.connect(f'tcp://{self.id_ip[node_id]}:5555')
+
+        socket.setsockopt( zmq.LINGER, 0)
+        socket.setsockopt( zmq.RCVTIMEO, macros.TIME_LIMIT )
 
         try:
             ask_url_server_req = {
