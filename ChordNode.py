@@ -310,7 +310,11 @@ class ChordNode:
         socket.setsockopt( zmq.LINGER, 0)
         socket.setsockopt( zmq.RCVTIMEO, macros.TIME_LIMIT )
         try:
-            alive_req_dict = {macros.action: macros.alive_req, macros.id: self.id, macros.ip: self.ip}
+            alive_req_dict = {
+                macros.action: macros.alive_req, 
+                macros.id: self.id, 
+                macros.ip: self.ip
+            }
             socket.send_string(dictToJson(alive_req_dict))
 
             message = socket.recv()
@@ -329,7 +333,11 @@ class ChordNode:
 
     def ansAlive(self, socket, message_dict):
         self.id_ip[message_dict[macros.id]] = message_dict[macros.ip]
-        alive_rep_dict = {macros.action: macros.alive_rep, macros.id: self.id, macros.ip: self.ip}
+        alive_rep_dict = {
+            macros.action: macros.alive_rep, 
+            macros.id: self.id, 
+            macros.ip: self.ip
+        }
         socket.send_string(dictToJson(alive_rep_dict))
 
 
@@ -364,7 +372,13 @@ class ChordNode:
             return -1
 
     def ansSuccesor(self, socket, id):
-        ask_succesor_rep = {macros.action: macros.ask_succesor_rep, macros.answer: {'id': id, 'ip': self.id_ip[id]}}
+        ask_succesor_rep = {
+            macros.action: macros.ask_succesor_rep, 
+            macros.answer: {
+                macros.id: id,
+                macros.ip: self.id_ip[id]
+            }
+        }
         socket.send_string(dictToJson(ask_succesor_rep))
 
 
@@ -378,7 +392,10 @@ class ChordNode:
         socket.setsockopt( zmq.RCVTIMEO, macros.TIME_LIMIT )
 
         try:
-            find_succesor_req = {macros.action: macros.find_succesor_req, macros.query: {'id': succesor_id}}
+            find_succesor_req = {
+                macros.action: macros.find_succesor_req, 
+                macros.query: {macros.id: succesor_id}
+            }
             # print(find_succesor_req)
             socket.send_string(dictToJson(find_succesor_req))
 
@@ -397,7 +414,13 @@ class ChordNode:
 
     def ansFindSuccesor(self, socket, message_dict):
         id = self.findSuccesor(message_dict[macros.query]['id'])
-        find_succesor_rep = {macros.action: macros.find_succesor_rep, macros.answer: {'id': id, 'ip': self.id_ip[id]}}
+        find_succesor_rep = {
+            macros.action: macros.find_succesor_rep, 
+            macros.answer: {
+                macros.id: id, 
+                macros.ip: self.id_ip[id]
+            }
+        }
         # print(find_succesor_rep)
         socket.send_string(dictToJson(find_succesor_rep))
 
@@ -432,7 +455,13 @@ class ChordNode:
             return -1
 
     def ansPredecesor(self, socket, id):
-        ask_predecesor_rep = {macros.action: macros.ask_predecesor_rep, macros.answer: {'id': id, 'ip': self.id_ip[id]}}
+        ask_predecesor_rep = {
+            macros.action: macros.ask_predecesor_rep, 
+            macros.answer: {
+                macros.id: id, 
+                macros.ip: self.id_ip[id]
+            }
+        }
         socket.send_string(dictToJson(ask_predecesor_rep))
 
 
@@ -446,7 +475,13 @@ class ChordNode:
         socket.setsockopt( zmq.RCVTIMEO, macros.TIME_LIMIT )
 
         try:
-            set_predecesor_req = {macros.action: macros.set_predecesor_req, macros.query: {'id': predecesor_id, 'ip': self.id_ip[predecesor_id]}}
+            set_predecesor_req = {
+                macros.action: macros.set_predecesor_req, 
+                macros.query: {
+                    macros.id: predecesor_id, 
+                    macros.ip: self.id_ip[predecesor_id]
+                }
+            }
             socket.send_string(dictToJson(set_predecesor_req))
 
             message = socket.recv()
@@ -478,7 +513,11 @@ class ChordNode:
         self.predecesor = id
         self.id_ip[id] = message_dict[macros.query]['ip']
 
-        set_predecesor_rep = {macros.action: macros.set_predecesor_rep, macros.keys: keys_ret, macros.keys_replic: keys_replic_ret}
+        set_predecesor_rep = {
+            macros.action: macros.set_predecesor_rep, 
+            macros.keys: keys_ret, 
+            macros.keys_replic: keys_replic_ret
+        }
         socket.send_string(dictToJson(set_predecesor_rep))
 
 
@@ -496,7 +535,14 @@ class ChordNode:
         socket.setsockopt( zmq.RCVTIMEO, macros.TIME_LIMIT )
 
         try:
-            update_finger_table_req = {macros.action: macros.update_finger_table_req, macros.query: {'s': s, 'i': i, 'ip': self.id_ip[s]}}
+            update_finger_table_req = {
+                macros.action: macros.update_finger_table_req, 
+                macros.query: {
+                    macros.id: s,
+                    macros.i: i, 
+                    macros.ip: self.id_ip[s]
+                }
+            }
             socket.send_string(dictToJson(update_finger_table_req))
 
             message = socket.recv()
@@ -512,8 +558,8 @@ class ChordNode:
             return -1
     
     def ansUpdateFingerTable(self, socket, message_dict):
-        self.id_ip[message_dict[macros.query]['s']] = message_dict[macros.query]['ip']
-        self.updateFingerTable(message_dict[macros.query]['s'], message_dict[macros.query]['i'])
+        self.id_ip[message_dict[macros.query][macros.id]] = message_dict[macros.query][macros.ip]
+        self.updateFingerTable(message_dict[macros.query][macros.id], message_dict[macros.query][macros.i])
         update_finger_table_rep = {macros.action: macros.update_finger_table_rep}
         socket.send_string(dictToJson(update_finger_table_rep))
 
@@ -531,7 +577,10 @@ class ChordNode:
         socket.setsockopt( zmq.RCVTIMEO, macros.TIME_LIMIT )
 
         try:
-            ask_closest_preceding_finger_req = {macros.action: macros.ask_closest_preceding_finger_req, macros.query: {'id': id}}
+            ask_closest_preceding_finger_req = {
+                macros.action: macros.ask_closest_preceding_finger_req, 
+                macros.query: {macros.id: id}
+            }
             # print(ask_closest_preceding_finger_req, node_id)
             socket.send_string(dictToJson(ask_closest_preceding_finger_req))
 
@@ -551,7 +600,13 @@ class ChordNode:
     def ansClosesPrecedingFinger(self, socket, message_dict):
         id = self.closestPrecedingFinger(message_dict[macros.query]['id'])
         ip = self.id_ip[id]
-        ask_closest_preceding_finger_rep = {macros.action: macros.ask_closest_preceding_finger_rep, macros.answer: {'id': id, 'ip': ip}}
+        ask_closest_preceding_finger_rep = {
+            macros.action: macros.ask_closest_preceding_finger_rep, 
+            macros.answer: {
+                macros.id: id, 
+                macros.ip: ip
+            }
+        }
         socket.send_string(dictToJson(ask_closest_preceding_finger_rep))
 
 
@@ -571,7 +626,7 @@ class ChordNode:
         try:
             ask_url_server_req = {
                 macros.action: macros.ask_url_server_req, 
-                macros.query: {'url': key_url}
+                macros.query: {macros.url: key_url}
             }
             # print(ask_key_position_req)
             socket.send_string(dictToJson(ask_url_server_req))
@@ -603,10 +658,12 @@ class ChordNode:
 
         ask_url_server_rep = {  
             macros.action: macros.ask_url_server_rep, 
-            macros.answer: {'id': self.id,
-                            'ip': self.ip, 
-                            'html': self.keys[key_url],
-                            macros.status: status},
+            macros.answer: {
+                macros.id: self.id,
+                macros.ip: self.ip, 
+                macros.html: self.keys[key_url],
+                macros.status: status
+            }
         }
         socket.send_string(dictToJson(ask_url_server_rep))
 
@@ -642,7 +699,13 @@ class ChordNode:
         socket.setsockopt( zmq.RCVTIMEO, macros.TIME_LIMIT )
 
         try:
-            ask_notify_req = {macros.action: macros.notify_req, macros.query: {'id': id, 'ip': self.id_ip[id]}, macros.keys: self.keys}
+            ask_notify_req = {
+                macros.action: macros.notify_req, 
+                macros.query: {
+                    macros.id: id, 
+                    macros.ip: self.id_ip[id]}, 
+                macros.keys: self.keys
+            }
             socket.send_string(dictToJson(ask_notify_req))
 
             message = socket.recv()
@@ -671,7 +734,10 @@ class ChordNode:
             ips[self.id_ip[f.node]] = 1
         ips_list = [i for i in ips.keys()]
 
-        client_join_rep = {macros.action: macros.client_join_rep, macros.answer: {macros.ip: ips_list}}
+        client_join_rep = {
+            macros.action: macros.client_join_rep, 
+            macros.answer: {macros.ip: ips_list}
+        }
         socket.send_string(dictToJson(client_join_rep))
 
 

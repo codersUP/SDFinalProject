@@ -87,7 +87,7 @@ class ChordClient:
             try:
                 ask_url_client_req = {
                     macros.action: macros.ask_url_client_req,
-                    macros.query: {'url': key_url}
+                    macros.query: {macros.url: key_url}
                 }
                 socket.send_string(dictToJson(ask_url_client_req))
 
