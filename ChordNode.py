@@ -302,6 +302,9 @@ class ChordNode:
     
 
     def askAlive(self, ip):
+        if ip == self.ip:
+            return self.id
+
         context = zmq.Context()
 
         socket = context.socket(zmq.REQ)
