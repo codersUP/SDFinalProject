@@ -57,14 +57,43 @@ def isAksClosestPrecedingFingerRep(message_dict):
     return message_dict[macros.action] == macros.ask_closest_preceding_finger_rep
 
 
-def isAskKeyPositionReq(message_dict):
-    return message_dict[macros.action] == macros.ask_key_position_req
+def isAskUrlClientReq(message_dict):
+    return message_dict[macros.action] == macros.ask_url_client_req
 
-def isAskKeyPositionRep(message_dict):
-    return message_dict[macros.action] == macros.ask_key_position_rep
+def isAskUrlClientRep(message_dict):
+    return message_dict[macros.action] == macros.ask_url_client_rep
+
+
+def isAskUrlServerReq(message_dict):
+    return message_dict[macros.action] == macros.ask_url_server_req
+
+def isAskUrlServerRep(message_dict):
+    return message_dict[macros.action] == macros.ask_url_server_rep
+
 
 def isNotifyReq(message_dict):
     return message_dict[macros.action] == macros.notify_req
 
 def isNotifyRep(message_dict):
     return message_dict[macros.action] == macros.notify_rep
+
+
+def isClientJoinReq(message_dict):
+    return message_dict[macros.action] == macros.client_join_req
+
+def isClientJoinRep(message_dict):
+    return message_dict[macros.action] == macros.client_join_rep
+
+
+def isSendHtmlReq(message_dict):
+    return message_dict[macros.action] == macros.send_html_req
+
+def isSendHtmlRep(message_dict):
+    return message_dict[macros.action] == macros.send_html_rep
+
+
+def isAskUrlEndReq(message_dict):
+    return message_dict[macros.action] == macros.ask_url_end_req
+
+def isAskUrlEndRep(message_dict):
+    return message_dict[macros.action] == macros.ask_url_end_rep

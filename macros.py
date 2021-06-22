@@ -1,10 +1,20 @@
 action = 'action'
-join = 'join'
 
+i = 'i'
 id = 'id'
 ip = 'ip'
 query = 'query'
 answer = 'answer'
+keys = 'keys'
+keys_replic = 'keys_replic'
+url = 'url'
+html = 'html'
+depth = 'depth'
+status = 'status'
+
+client_ip = 'client_ip'
+client_port = 'client_port'
+client_query_id = 'client_query_id'
 
 alive_req = 'alive_req'
 alive_rep = 'alive_rep'
@@ -27,13 +37,26 @@ update_finger_table_rep = 'update_finger_table_rep'
 ask_closest_preceding_finger_req = 'ask_closest_preceding_finger_req'
 ask_closest_preceding_finger_rep = 'ask_closest_preceding_finger_rep'
 
-ask_key_position_req = 'ask_key_position_req'
-ask_key_position_rep = 'ask_key_position_rep'
+ask_url_client_req = 'ask_url_client_req'
+ask_url_client_rep = 'ask_url_client_rep'
+
+ask_url_server_req = 'ask_url_server_req'
+ask_url_server_rep = 'ask_url_server_rep'
 
 notify_req = 'notify_req'
 notify_rep = 'notify_rep'
 
+client_join_req = 'client_join_req'
+client_join_rep = 'client_join_rep'
+
+send_html_req = 'send_html_req'
+send_html_rep = 'send_html_rep'
+
+ask_url_end_req = 'ask_url_end_req'
+ask_url_end_rep = 'ask_url_end_rep'
+
 TIME_LIMIT = 5000 # ms
+URL_TIME_LIMIT = 100000 # ms
 TIME_FIXFINGERS = 1 # s
 TIME_STABILIZE = 1 # s
 TIME_SUCCESORS_REFRESH = 1
